@@ -14,6 +14,17 @@ uv run imgsr create-user --admin admin
 uv run imgsr serve --port 18090 # API: http://127.0.0.1:18090/api/health
 ```
 
+## 前端
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://127.0.0.1:5173，/api 代理到 127.0.0.1:18090（先在仓库根 uv run imgsr serve --port 18090）
+npm test           # Vitest 单元测试
+npm run build      # 输出 frontend/dist，由后端 STATIC_DIR（默认 frontend/dist）托管
+npm run e2e        # Playwright 冒烟：自动启动 scripts/e2e_server.py（假上游，不花钱）
+```
+
 ## 测试
 
 ```bash
