@@ -80,3 +80,14 @@ def test_rejection_does_not_shrink_global_pillow_limit():
                          max_pixels=10_000)
     assert Image.MAX_IMAGE_PIXELS == before
     Image.open(io.BytesIO(encode(Image.new("RGB", (300, 300)), "PNG"))).load()
+
+
+def test_mpo_phone_jpeg_is_accepted_and_rotated():
+    exif = Image.Exif()
+    exif[0x0112] = 6
+    extra = Image.new("RGB", (200, 100), "gray")
+    data = encode(Image.new("RGB", (200, 100), "white"), "MPO", save_all=True,
+                  append_images=[extra], exif=exif)
+    assert Image.open(io.BytesIO(data)).format == "MPO"
+    out = normalize_upload(data, **LIMITS)
+    assert out.mode == "RGB" and out.size == (100, 200)

@@ -6,7 +6,8 @@ import io
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-ALLOWED_FORMATS = {"PNG", "JPEG", "WEBP"}
+# MPO = JPEG with extra embedded frames (phone gain maps / depth maps); only frame 0 is used.
+ALLOWED_FORMATS = {"PNG", "JPEG", "MPO", "WEBP"}
 
 
 class UploadRejected(Exception):
