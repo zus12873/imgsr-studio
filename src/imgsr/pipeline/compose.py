@@ -7,9 +7,9 @@ import math
 import numpy as np
 from PIL import Image
 
-from imgsr.pipeline.tiling import Box, TilePlan
+from imgsr.pipeline.tiling import PAD_RATIO, Box, TilePlan
 
-MAX_RATIO = 3.0
+MAX_RATIO = PAD_RATIO
 
 
 def edge_color(img: Image.Image) -> tuple[int, int, int]:

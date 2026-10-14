@@ -21,7 +21,7 @@ from imgsr.pipeline.align import slice_for_tile
 from imgsr.pipeline.compose import crop_content, make_download, pad_to_ratio, stitch, upscale
 from imgsr.pipeline.prompt import TRANSCRIBE_PROMPT, build_prompt
 from imgsr.pipeline.textdiff import Diff, compare
-from imgsr.pipeline.tiling import Box, Tile, TilePlan, plan_tiles
+from imgsr.pipeline.tiling import MAX_TILES, Box, PlanTooLarge, Tile, TilePlan, plan_tiles
 from imgsr.relay.errors import RelayError
 from imgsr.relay.retry import DEFAULT_DELAYS, with_retries
 from imgsr.review.rules import Suggestion, suggest
@@ -66,6 +66,8 @@ class _Gen:
 def _message(exc: BaseException) -> str:
     if isinstance(exc, RelayError):
         return exc.message
+    if isinstance(exc, PlanTooLarge):
+        return str(exc)
     return f"{exc.__class__.__name__}: {exc}"[:300]
 
 
@@ -183,6 +185,9 @@ class Pipeline:
         try:
             source = await asyncio.to_thread(_load_rgb, self.svc.storage.source(ctx.task_id))
             plan = plan_tiles(source, s.pixel_cap, ctx.mode, ctx.pre)  # type: ignore[arg-type]
+            if len(plan.tiles) > MAX_TILES:
+                raise PlanTooLarge(f"需要切 {len(plan.tiles)} 块，超过单轮上限 {MAX_TILES} 块。"
+                                   "请关闭预放大，或裁剪图片后再试")
             hints = await self._tile_hints(ctx, source, plan, s)
             async with asyncio.TaskGroup() as tg:
                 futures = [
@@ -327,6 +332,9 @@ class Pipeline:
             async with asyncio.TaskGroup() as tg:
                 futures = [tg.create_task(one(b)) for b in regions]
             transcript = "\n".join(f.result() for f in futures)
+            source = await asyncio.to_thread(_load_rgb, self.svc.storage.source(task_id))
+            refine_plan = await asyncio.to_thread(plan_tiles, source, s.pixel_cap, "tiles", 2)
+            can_refine = refine_plan.mode == "tiles" and len(refine_plan.tiles) <= MAX_TILES
         except Exception as exc:
             error = _first_error(exc)
             fallback = Suggestion("manual_check", "审查失败，请人工核对或重试审查").to_json()
@@ -335,7 +343,8 @@ class Pipeline:
                 raise error from None
             return
         diffs = compare(confirmed, transcript)
-        sugs = suggest(diffs, has_text=True, used_hint=used_hint, preupscale=pre, previous=previous)
+        sugs = suggest(diffs, has_text=True, used_hint=used_hint, preupscale=pre, previous=previous,
+                       can_refine=can_refine)
         self._finish_review(round_id, {"model": s.review_model, "transcript": transcript,
                                        "diffs": [d.to_json() for d in diffs],
                                        "suggestions": [x.to_json() for x in sugs]})

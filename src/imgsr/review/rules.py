@@ -32,7 +32,9 @@ def suggest(
     used_hint: bool,
     preupscale: int,
     previous: list[Diff] | None,
+    can_refine: bool = True,
 ) -> list[Suggestion]:
+    """`can_refine` is False when a 2x-preupscaled tiling would exceed the per-round tile cap."""
     if not has_text:
         return [Suggestion("manual_check", "没有确认原文，无法自动比对，请人工放大核对")]
     if not diffs:
@@ -46,7 +48,7 @@ def suggest(
             Suggestion("retry_with_hint", "上一轮没有带原文提示，带上完整原文重跑", all_ids,
                        {"use_text_hint": True})
         )
-    elif preupscale < 2:
+    elif preupscale < 2 and can_refine:
         out.append(
             Suggestion("tile_refine", "已带原文提示仍有差异，切块并预放大 2 倍后重绘", all_ids,
                        {"strategy": "tiles", "preupscale": 2, "use_text_hint": True})

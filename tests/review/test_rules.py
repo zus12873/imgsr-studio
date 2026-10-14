@@ -58,3 +58,8 @@ def test_to_json():
     assert Suggestion("accept", "ok").to_json() == {
         "action": "accept", "reason": "ok", "diff_ids": [], "params": {}
     }
+
+
+def test_no_tile_refine_when_it_cannot_run():
+    sugs = suggest([D], has_text=True, used_hint=True, preupscale=1, previous=None, can_refine=False)
+    assert actions(sugs) == ["manual_check"]

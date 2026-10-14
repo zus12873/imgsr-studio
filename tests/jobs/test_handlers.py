@@ -266,3 +266,40 @@ async def test_save_failure_after_render_fails_round_and_refunds(sf, services, m
         assert rnd.status == "failed" and "No space" in rnd.error
         assert db.get(Task, tid).status == "round_failed"
         assert quota.used(db, f"user:{uid}", quota.today()) == 0
+
+
+async def test_plan_over_tile_cap_fails_before_upstream_calls(sf, services, make_user, monkeypatch):
+    uid = make_user()
+    with sf() as db:
+        charge = quota.consume(db, [(f"user:{uid}", 50, "x")], quota.today())
+    monkeypatch.setattr(handlers_mod, "MAX_TILES", 1)
+    svc, _ = services()
+    tid, rid, job = seed(sf, svc.storage, two_column_page(), owner=uid, confirmed="左栏。", charge=charge)
+    with pytest.raises(Exception, match="上限"):
+        await Pipeline(svc).generate(job)
+    assert svc.images.calls == [] and svc.chat.calls == []
+    with sf() as db:
+        rnd = db.get(Round, rid)
+        assert rnd.status == "failed" and "上限" in rnd.error and "PlanTooLarge" not in rnd.error
+        assert quota.used(db, f"user:{uid}", quota.today()) == 0
+
+
+async def test_review_skips_tile_refine_when_over_cap(sf, services, make_user, monkeypatch):
+    uid = make_user()
+    monkeypatch.setattr(handlers_mod, "MAX_TILES", 0)
+    svc, _ = services(chat=FakeChat(lambda i, s: "晚上还会发出光光呢！"))
+    tid, rid, job = reviewable(svc, sf, uid, confirmed="晚上还会发出亮光呢！", use_hint=True)
+    await Pipeline(svc).review(job)
+    with sf() as db:
+        sugs = db.get(Round, rid).review["suggestions"]
+    assert [s["action"] for s in sugs] == ["manual_check"]
+
+
+async def test_review_skips_tile_refine_when_refine_plan_degenerates(sf, services, make_user):
+    uid = make_user()  # the blank 300x200 test image has no seams, so a refine plan is just "whole"
+    svc, _ = services(chat=FakeChat(lambda i, s: "晚上还会发出光光呢！"))
+    tid, rid, job = reviewable(svc, sf, uid, confirmed="晚上还会发出亮光呢！", use_hint=True)
+    await Pipeline(svc).review(job)
+    with sf() as db:
+        sugs = db.get(Round, rid).review["suggestions"]
+    assert [s["action"] for s in sugs] == ["manual_check"]

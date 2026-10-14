@@ -1,3 +1,4 @@
+import numpy as np
 from PIL import Image, ImageDraw
 
 from imgsr.pipeline.tiling import NO_BAND_NOTE, Box, TilePlan, plan_tiles
@@ -69,3 +70,54 @@ def test_plan_json_roundtrip():
 
 def test_box_intersect():
     assert Box(0, 0, 10, 10).intersect(Box(5, 2, 20, 8)) == Box(5, 2, 10, 8)
+
+
+def grid_page(w=2400, h=3000):
+    img = Image.new("L", (w, h), 255)
+    d = ImageDraw.Draw(img)
+    for y in range(0, h, 300):
+        d.rectangle((20, y + 20, 1149, y + 259), fill=0)
+        d.rectangle((1250, y + 20, w - 20, y + 259), fill=0)
+    return img
+
+
+def test_box_padded_area():
+    assert Box(0, 0, 2400, 600).padded_area == 2400 * 800
+    assert Box(0, 0, 1000, 800).padded_area == 1000 * 800
+
+
+def test_tiles_fit_after_padding_and_cover_page_once():
+    img = grid_page()
+    plan = plan_tiles(img, CAP)
+    assert plan.mode == "tiles" and len(plan.tiles) <= 8
+    assert all(t.box.padded_area <= 0.95 * CAP for t in plan.tiles)
+    cover = np.zeros((img.height, img.width), dtype=np.int8)
+    for t in plan.tiles:
+        cover[t.keep.y0:t.keep.y1, t.keep.x0:t.keep.x1] += 1
+    assert (cover == 1).all()
+
+
+def test_wide_strip_is_whole_only_if_padded_area_fits():
+    assert plan_tiles(Image.new("L", (1838, 456), 255), CAP).mode == "whole"
+    plan = plan_tiles(Image.new("L", (2400, 600), 255), CAP)
+    assert plan.mode == "whole" and plan.notes == [NO_BAND_NOTE]
+
+
+def rows_page(w, h, pitch=150):
+    """Full-width text rows: horizontal gaps only, no vertical gap anywhere."""
+    img = Image.new("L", (w, h), 255)
+    d = ImageDraw.Draw(img)
+    for y in range(0, h, pitch):
+        d.rectangle((20, y + 20, w - 20, y + 120), fill=0)
+    return img
+
+
+def test_long_screenshot_uses_area_not_padded_area_for_piece_count():
+    plan = plan_tiles(rows_page(1080, 12000), CAP)
+    assert plan.mode == "tiles" and len(plan.tiles) <= 10
+    assert all(t.box.padded_area <= 0.95 * CAP for t in plan.tiles)
+
+
+def test_refine_without_vertical_gaps_falls_back_to_even_strips():
+    plan = plan_tiles(rows_page(1200, 2400), CAP, "tiles", preupscale=2)
+    assert plan.mode == "tiles" and 2 <= len(plan.tiles) <= 16
