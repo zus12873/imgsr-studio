@@ -46,7 +46,7 @@ test("review panel lists diffs and executes suggestions by index", async () => {
 test("accept suggestion sets the final round", async () => {
   const onAccept = vi.fn();
   render(<ReviewPanel round={makeRound()} onExecute={vi.fn()} onAccept={onAccept} onRetryReview={vi.fn()} />);
-  await userEvent.click(screen.getByRole("button", { name: "设为最终版" }));
+  await userEvent.click(screen.getByRole("button", { name: "采用本轮并定稿" }));
   expect(onAccept).toHaveBeenCalled();
 });
 

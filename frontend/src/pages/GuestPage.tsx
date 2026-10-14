@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { fileUrl } from "../api/client";
-import { useGuestQuota, useGuestTask, useGuestUpload } from "../api/hooks";
+import { qk, useGuestQuota, useGuestTask, useGuestUpload } from "../api/hooks";
 import type { GuestTask } from "../api/types";
 import { CompareViewer } from "../components/CompareViewer";
 import { ErrorNote } from "../components/ErrorNote";
@@ -16,6 +17,12 @@ export default function GuestPage() {
   const task = useGuestTask(taskId);
   const [prompt, setPrompt] = useState("");
   const remaining = quota.data?.remaining;
+  const qc = useQueryClient();
+  const status = task.data?.status;
+  useEffect(() => {
+    // A finished round settles the charge; a failed one is refunded server-side.
+    if (status === "done" || status === "round_failed") void qc.invalidateQueries({ queryKey: qk.quota });
+  }, [status, qc]);
   return (
     <div className="mx-auto max-w-5xl space-y-4 p-4">
       <header className="space-y-1">
@@ -47,7 +54,14 @@ export default function GuestPage() {
           </details>
         </>
       )}
-      {taskId && task.error && <ErrorNote error={task.error} />}
+      {taskId && task.error && (
+        <div className="space-y-3">
+          <ErrorNote error={task.error} />
+          <button type="button" className="btn-secondary" onClick={() => setParams({})}>
+            重新上传
+          </button>
+        </div>
+      )}
       {taskId && task.data && <GuestResult task={task.data} onReset={() => setParams({})} />}
     </div>
   );

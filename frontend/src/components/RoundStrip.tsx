@@ -44,7 +44,9 @@ export function RoundStrip({
               {r.id === finalRoundId ? " · 定稿" : ""}
             </div>
             {r.status === "succeeded" && r.review && (
-              <div className="text-xs text-slate-500">{r.review.error ? "审查失败" : `差异 ${r.review.diffs.length}`}</div>
+              <div className="text-xs text-slate-500">
+                {r.review.error ? "审查失败" : r.review.model === null ? "未比对" : `差异 ${r.review.diffs.length}`}
+              </div>
             )}
           </button>
         );

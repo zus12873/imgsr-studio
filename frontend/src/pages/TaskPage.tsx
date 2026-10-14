@@ -104,21 +104,23 @@ export default function TaskPage() {
             round={current}
             pending={pending}
             onRetry={() => retryRound.mutate(current.seq)}
-            onExecute={(index) => createRound.mutate({ suggestion: { round_id: current.id, index } })}
+            onExecute={(index) =>
+              createRound.mutate({ suggestion: { round_id: current.id, index } }, { onSuccess: () => setSelected(null) })
+            }
             onAccept={() => setFinal.mutate(current.id)}
           />
-          {!pending && (
-            <details className="rounded-xl border border-slate-200 bg-white p-3">
-              <summary className="cursor-pointer text-sm font-medium">再来一轮</summary>
-              <div className="mt-3">
-                <RoundForm
-                  hasText={Boolean(t.confirmed_text)}
-                  submitLabel="生成新一轮"
-                  onSubmit={(req) => createRound.mutate(req, { onSuccess: () => setSelected(null) })}
-                />
-              </div>
-            </details>
-          )}
+          {/* Stays mounted while a request is pending so a rejected request keeps what was typed. */}
+          <details className="rounded-xl border border-slate-200 bg-white p-3">
+            <summary className="cursor-pointer text-sm font-medium">再来一轮</summary>
+            <div className="mt-3">
+              <RoundForm
+                hasText={Boolean(t.confirmed_text)}
+                submitLabel="生成新一轮"
+                pending={pending}
+                onSubmit={(req) => createRound.mutate(req, { onSuccess: () => setSelected(null) })}
+              />
+            </div>
+          </details>
         </>
       )}
     </div>
@@ -140,6 +142,7 @@ function RoundDetail({
   onExecute: (index: number) => void;
   onAccept: () => void;
 }) {
+  const [baseSeq, setBaseSeq] = useState<number | null>(null);
   if (round.status === "queued" || round.status === "running") {
     return <Working text="正在生成（单轮约 1–3 分钟）…" />;
   }
@@ -154,15 +157,37 @@ function RoundDetail({
     );
   }
   const notes = round.strategy.plan?.notes ?? [];
+  const others = task.rounds.filter((r) => r.status === "succeeded" && r.seq !== round.seq);
+  const base = others.find((r) => r.seq === baseSeq);
+  const left = base
+    ? { src: fileUrl(task.id, `result-${base.seq}`), label: `第 ${base.seq} 轮` }
+    : { src: fileUrl(task.id, "source"), label: "原图" };
+  const isFinal = round.id === task.final_round_id;
   return (
     <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
       <div className="space-y-2">
-        <CompareViewer
-          left={{ src: fileUrl(task.id, "source"), label: "原图" }}
-          right={{ src: fileUrl(task.id, `result-${round.seq}`), label: `第 ${round.seq} 轮` }}
-        />
+        <label className="flex items-center gap-2 text-sm text-slate-600">
+          对比基准
+          <select
+            aria-label="对比基准"
+            className="input w-auto"
+            value={base ? String(base.seq) : ""}
+            onChange={(e) => setBaseSeq(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">原图</option>
+            {others.map((r) => (
+              <option key={r.id} value={r.seq}>
+                第 {r.seq} 轮
+              </option>
+            ))}
+          </select>
+        </label>
+        <CompareViewer left={left} right={{ src: fileUrl(task.id, `result-${round.seq}`), label: `第 ${round.seq} 轮` }} />
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <a className="btn-primary" href={fileUrl(task.id, `download-${round.seq}`, true)}>
+          <button type="button" className="btn-primary" disabled={pending || isFinal} onClick={onAccept}>
+            {isFinal ? "当前定稿" : "设为最终版"}
+          </button>
+          <a className="btn-secondary" href={fileUrl(task.id, `download-${round.seq}`, true)}>
             下载
           </a>
           <a className="btn-secondary" href={fileUrl(task.id, `result-${round.seq}`, true)}>

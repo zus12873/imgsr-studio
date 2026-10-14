@@ -72,6 +72,10 @@ function useTaskMutation<V>(id: string, fn: (variables: V) => Promise<Task>) {
       void qc.invalidateQueries({ queryKey: qk.tasks });
       void qc.invalidateQueries({ queryKey: qk.me });
     },
+    // A rejected action (e.g. 409 because another tab started a round) means our view is stale.
+    onError: () => {
+      void qc.invalidateQueries({ queryKey: qk.task(id) });
+    },
   });
 }
 
