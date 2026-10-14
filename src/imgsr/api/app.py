@@ -7,8 +7,9 @@ import contextlib
 import logging
 from collections.abc import AsyncIterator
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from imgsr.api import routes_admin, routes_auth, routes_files, routes_guest, routes_tasks
 from imgsr.api.deps import AppContext
@@ -100,4 +101,23 @@ def create_app(
 
     for module in ROUTERS:
         app.include_router(module.router)
+    _mount_spa(app, base.static_dir)
     return app
+
+
+def _mount_spa(app: FastAPI, static_dir) -> None:  # noqa: ANN001
+    """Serve the built frontend: /assets plus an index.html fallback for client routes."""
+    index = static_dir / "index.html"
+    if not index.is_file():
+        return
+    root = static_dir.resolve()
+    app.mount("/assets", StaticFiles(directory=static_dir / "assets", check_dir=False), name="assets")
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def spa(path: str) -> FileResponse:
+        if path == "api" or path.startswith("api/"):
+            raise HTTPException(404, "Not Found")
+        candidate = (root / path).resolve()
+        if path and candidate.is_file() and root in candidate.parents:
+            return FileResponse(candidate)
+        return FileResponse(index, headers={"Cache-Control": "no-cache"})

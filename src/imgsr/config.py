@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     image_timeout_s: float = 180.0
     chat_timeout_s: float = 240.0
     min_free_bytes: int = 1_000_000_000
+    static_dir: Path = Path("frontend/dist")
 
     @property
     def db_path(self) -> Path:
