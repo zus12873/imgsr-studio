@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 import uuid
 from datetime import datetime, timedelta
 
@@ -18,6 +19,9 @@ from imgsr.pipeline.prompt import BASE_PROMPT
 from imgsr.storage import TASK_ID_RE
 
 router = APIRouter(prefix="/api/tasks")
+# Serialises check → charge → insert so a double-clicked submit cannot charge twice or race
+# on (task_id, seq). Sync endpoints run in the threadpool, so a thread lock is enough here.
+_ROUND_LOCK = threading.Lock()
 EXECUTABLE = {"retry_with_hint", "tile_refine"}
 
 
@@ -140,31 +144,37 @@ def retry_transcribe(task_id: str, user: User = Depends(current_user),
 @router.post("/{task_id}/rounds", status_code=201)
 def create_round(task_id: str, body: RoundIn, user: User = Depends(current_user),
                  db: Session = Depends(db_session), c: AppContext = Depends(get_ctx)) -> TaskOut:
-    task = own_task(db, task_id, user)
-    if task.status in ("uploaded", "transcribing"):
-        raise HTTPException(409, "请等待原文转写完成")
-    if task_busy(db, task.id):
-        raise HTTPException(409, "该任务正在处理中")
-    if user_generating(db, user.id):
-        raise HTTPException(409, "你已有一个生成任务在进行中")
-    params = {"prompt": body.prompt, "strategy": body.strategy, "preupscale": body.preupscale,
-              "use_text_hint": body.use_text_hint}
-    if body.suggestion is not None:
-        params.update(_suggestion_params(db, task, body.suggestion.round_id, body.suggestion.index))
-    has_text = bool((task.confirmed_text or "").strip())
-    charge = charge_user(db, user)
-    seq = (db.scalar(select(func.max(Round.seq)).where(Round.task_id == task.id)) or 0) + 1
-    rnd = Round(task_id=task.id, seq=seq, image_model=c.settings().image_model,
-                prompt=(params["prompt"] or "").strip() or BASE_PROMPT,
-                strategy={"mode": params["strategy"], "preupscale": params["preupscale"]},
-                use_text_hint=bool(params["use_text_hint"]) and has_text, status="queued",
-                charge=charge)
-    db.add(rnd)
-    task.status = "generating"
-    db.flush()
-    job = Job(kind="generate", task_id=task.id, round_id=rnd.id)
-    db.add(job)
-    db.commit()
+    with _ROUND_LOCK:
+        task = own_task(db, task_id, user)
+        if task.status in ("uploaded", "transcribing"):
+            raise HTTPException(409, "请等待原文转写完成")
+        if task_busy(db, task.id):
+            raise HTTPException(409, "该任务正在处理中")
+        if user_generating(db, user.id):
+            raise HTTPException(409, "你已有一个生成任务在进行中")
+        params = {"prompt": body.prompt, "strategy": body.strategy, "preupscale": body.preupscale,
+                  "use_text_hint": body.use_text_hint}
+        if body.suggestion is not None:
+            params.update(_suggestion_params(db, task, body.suggestion.round_id, body.suggestion.index))
+        has_text = bool((task.confirmed_text or "").strip())
+        charge = charge_user(db, user)
+        try:
+            seq = (db.scalar(select(func.max(Round.seq)).where(Round.task_id == task.id)) or 0) + 1
+            rnd = Round(task_id=task.id, seq=seq, image_model=c.settings().image_model,
+                        prompt=(params["prompt"] or "").strip() or BASE_PROMPT,
+                        strategy={"mode": params["strategy"], "preupscale": params["preupscale"]},
+                        use_text_hint=bool(params["use_text_hint"]) and has_text, status="queued",
+                        charge=charge)
+            db.add(rnd)
+            task.status = "generating"
+            db.flush()
+            job = Job(kind="generate", task_id=task.id, round_id=rnd.id)
+            db.add(job)
+            db.commit()
+        except Exception:
+            db.rollback()
+            quota.refund(db, charge)
+            raise
     c.runner.enqueue(job.id)
     return task_out(db, task)
 
@@ -172,27 +182,38 @@ def create_round(task_id: str, body: RoundIn, user: User = Depends(current_user)
 @router.post("/{task_id}/rounds/{seq}/retry")
 def retry_round(task_id: str, seq: int, user: User = Depends(current_user),
                 db: Session = Depends(db_session), c: AppContext = Depends(get_ctx)) -> TaskOut:
-    task = own_task(db, task_id, user)
-    rnd = db.scalar(select(Round).where(Round.task_id == task.id, Round.seq == seq))
-    if rnd is None:
-        raise HTTPException(404, "轮次不存在")
-    if task_busy(db, task.id):
-        raise HTTPException(409, "任务正在处理中")
-    if rnd.status == "failed":
-        if user_generating(db, user.id):
-            raise HTTPException(409, "你已有一个生成任务在进行中")
-        charge = charge_user(db, user)
-        rnd.status, rnd.error, rnd.charge = "queued", None, charge
-        rnd.strategy = {"mode": rnd.strategy.get("mode", "auto"),
-                        "preupscale": rnd.strategy.get("preupscale", 1)}
-        task.status, kind = "generating", "generate"
-    elif rnd.status == "succeeded" and rnd.review and rnd.review.get("error"):
-        task.status, kind = "reviewing", "review"
-    else:
-        raise HTTPException(409, "该轮次无需重试")
-    job = Job(kind=kind, task_id=task.id, round_id=rnd.id)
-    db.add(job)
-    db.commit()
+    with _ROUND_LOCK:
+        task = own_task(db, task_id, user)
+        rnd = db.scalar(select(Round).where(Round.task_id == task.id, Round.seq == seq))
+        if rnd is None:
+            raise HTTPException(404, "轮次不存在")
+        if task_busy(db, task.id):
+            raise HTTPException(409, "任务正在处理中")
+        charge = None
+        if rnd.status == "failed":
+            if user_generating(db, user.id):
+                raise HTTPException(409, "你已有一个生成任务在进行中")
+            charge = charge_user(db, user)
+            kind = "generate"
+        elif rnd.status == "succeeded" and rnd.review and rnd.review.get("error"):
+            kind = "review"
+        else:
+            raise HTTPException(409, "该轮次无需重试")
+        try:
+            if kind == "generate":
+                rnd.status, rnd.error, rnd.charge = "queued", None, charge
+                rnd.strategy = {"mode": rnd.strategy.get("mode", "auto"),
+                                "preupscale": rnd.strategy.get("preupscale", 1)}
+                task.status = "generating"
+            else:
+                task.status = "reviewing"
+            job = Job(kind=kind, task_id=task.id, round_id=rnd.id)
+            db.add(job)
+            db.commit()
+        except Exception:
+            db.rollback()
+            quota.refund(db, charge)
+            raise
     c.runner.enqueue(job.id)
     return task_out(db, task)
 

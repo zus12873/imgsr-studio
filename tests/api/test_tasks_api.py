@@ -1,5 +1,8 @@
 import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 
+from imgsr import quota
 from imgsr.relay.errors import RelayError
 from tests.api.helpers import add_user, login, upload, wait_task
 
@@ -143,3 +146,46 @@ def test_retry_transcription(api):
     api.chat.fail = None
     assert api.client.post(f"/api/tasks/{tid}/transcribe").status_code == 200
     wait_task(api.client, tid, lambda b: b["status"] == "awaiting_confirm")
+
+
+def _post_twice(api, path):
+    with ThreadPoolExecutor(2) as pool:
+        futures = [pool.submit(api.client.post, path, json={}) for _ in range(2)]
+        return sorted(f.result().status_code for f in futures)
+
+
+def _slow_consume(monkeypatch):
+    real = quota.consume
+
+    def slow(*args, **kwargs):
+        charge = real(*args, **kwargs)
+        time.sleep(0.2)  # widen the check→insert window so both requests overlap
+        return charge
+
+    monkeypatch.setattr(quota, "consume", slow)
+
+
+def test_double_submit_charges_once(api, monkeypatch):
+    tid = ready_task(api)
+    api.images.gate = threading.Event()
+    _slow_consume(monkeypatch)
+    codes = _post_twice(api, f"/api/tasks/{tid}/rounds")
+    api.images.gate.set()
+    assert codes == [201, 409]
+    assert api.client.get("/api/me").json()["used_today"] == 1
+    wait_task(api.client, tid, lambda b: b["status"] == "reviewed")
+
+
+def test_double_retry_queues_one_job(api, monkeypatch):
+    tid = ready_task(api)
+    api.images.fail = RelayError("上游拒绝请求：bad", kind="rejected", retryable=False)
+    api.client.post(f"/api/tasks/{tid}/rounds", json={})
+    wait_task(api.client, tid, lambda b: b["status"] == "round_failed")
+    api.images.fail = None
+    api.images.gate = threading.Event()
+    _slow_consume(monkeypatch)
+    codes = _post_twice(api, f"/api/tasks/{tid}/rounds/1/retry")
+    api.images.gate.set()
+    assert codes == [200, 409]
+    assert api.client.get("/api/me").json()["used_today"] == 1
+    wait_task(api.client, tid, lambda b: b["status"] == "reviewed")
