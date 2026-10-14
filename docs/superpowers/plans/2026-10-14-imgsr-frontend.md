@@ -3664,7 +3664,7 @@ git commit -m "test: browser E2E against a fake relay; document the frontend" -m
 
 2026-10-14，分支 `feat/frontend`，Native 方式（本会话逐 Task 执行 + 结束时一次 Opus 整分支审查）。
 
-**Task 提交**：T1 7ae790c · T2 d35d322 · T3 8723907 · T4 6b7aab5 · T5 df08cc6 · T6 2819436 · T7 482be3b · T8 1e076e1 · T9 4893fad · T10 c96b3c6 · T11 437ef3e · T12 5c92666；审查修复 59b219e。
+**Task 提交**：T1 951b56d · T2 1a21242 · T3 c19ece8 · T4 791dea9 · T5 74f4359 · T6 922abbf · T7 7fa01ae · T8 ca7c30e · T9 96efb27 · T10 70df5a8 · T11 6cfc0b2 · T12 ad6625b；审查修复 87353d0。
 
 **最终测试**：前端 vitest 85/85、typecheck 无错误、Playwright E2E 2/2（重新 build 后）；后端 pytest 198/198。
 

@@ -6051,7 +6051,7 @@ git commit -m "docs: README, env example and real-upstream regression script" -m
 
 执行方式：Native（executing-plans，单会话逐 Task），分支 `feat/backend`，2026-10-14。
 
-**Task 1–19 全部完成**（真实上游冒烟除外，见下），提交 `21e6ee4..787356b`；每个 Task 均先看测试失败再实现，`uv run pytest -q` 170/170、ruff 无告警。
+**Task 1–19 全部完成**（真实上游冒烟除外，见下），提交 `3dae2b3..6e17ac8`；每个 Task 均先看测试失败再实现，`uv run pytest -q` 170/170、ruff 无告警。
 
 执行中的裁决：
 - T5：计划代码先把 `?` 转成 `？` 再去 `[?]`，导致不确定标记残留（测试抓到）→ 先去 `[?]/[？]` 再转标点。
@@ -6060,7 +6060,7 @@ git commit -m "docs: README, env example and real-upstream regression script" -m
 - T18：服务冒烟改用后台进程 + `curl --retry`（环境禁止前台 sleep），检查项不变（health ok、CSRF 403、迁移成功）。
 - T19：**真实上游冒烟未执行**——会产生费用且本仓库 `.env` 尚无 `OPEN_API_KEY`，待用户确认后运行 `scripts/regress_real.py`（至少 图片1/2/9/14/17）。验收标准 1–3 仍待该次运行确认。
 
-**整分支审查**（独立 reviewer，Opus）：无 Critical；7 条 Important 已全部按 TDD 修复（`4b1b46a..b862179`），最终 `uv run pytest -q` 191/191：
+**整分支审查**（独立 reviewer，Opus）：无 Critical；7 条 Important 已全部按 TDD 修复（`751906f..f1f13e6`），最终 `uv run pytest -q` 191/191：
 1. 上传时修改 Pillow 全局像素上限（测试依赖执行顺序、大图结果崩溃）→ 不再修改全局值。
 2. MPO 格式手机 JPEG 被拒 → 允许 MPO（只取第一帧）。
 3. 截图外框 >3% 时找不到切缝、贴边内容被忽略 → 检测深色外框，浅色边距保留。
@@ -6081,7 +6081,7 @@ git commit -m "docs: README, env example and real-upstream regression script" -m
 | 图片1 | 1106×1428 | 1217×1571 | 2 块 | 145 s | 0 差异，建议采用 |
 | 图片17 | 2316×1294 | 1677×938（下载版放大到 2316×1294） | **整图（异常）** | 123 s | 0 差异 |
 
-回归发现的问题（分支 `fix/regression-findings`，`48bd2f4`，测试 193/193）：
+回归发现的问题（分支 `fix/regression-findings`，`2e9e327`，测试 193/193）：
 - 透明 PNG 的外圈在上传时被垫成白色，白边 + 黑框让外框检测失效，图片17 退化为整图 → 外框检测跨过外侧浅色环、并忽略垂直方向边缘环。修复后重跑图片17：3 块、结果 2316×1294 原生分辨率，113 s；接缝 3 px 突变与原图相当（竖缝蓝通道 2.37 vs 原图 2.53，横缝 ≤ 0.45）。
 - 审查把 emoji / 装饰符号（👉 ☆ △）的有无当成差异 → 归一化时忽略 So/Sk/Cf 类符号。
 
