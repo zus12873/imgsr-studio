@@ -198,23 +198,37 @@ class Pipeline:
                 raise error from None
             self.svc.storage.delete_task(ctx.task_id)
             return
-        if not self._task_exists(ctx.task_id):
+        try:
+            review_id = await self._store_round(ctx, plan, result, download, scale, started)
+        except Exception as exc:
+            # Without this the round stays "running" and the task "generating" forever.
+            if self._fail_round(ctx, _message(exc)):
+                raise
             self.svc.storage.delete_task(ctx.task_id)
             return
+        if review_id is not None:
+            self.svc.enqueue(review_id)
+
+    async def _store_round(self, ctx: _Gen, plan: TilePlan, result: Image.Image,
+                           download: Image.Image, scale: float, started: float) -> int | None:
+        """Persist a rendered round; returns the review job id to enqueue (None if not needed)."""
+        if not self._task_exists(ctx.task_id):
+            self.svc.storage.delete_task(ctx.task_id)
+            return None
         await asyncio.to_thread(save_png, result, self.svc.storage.result(ctx.task_id, ctx.seq))
         await asyncio.to_thread(save_png, download, self.svc.storage.download(ctx.task_id, ctx.seq))
-        review_id = None
         with self.svc.session_factory() as db:
             rnd = db.get(Round, ctx.round_id)
             if rnd is None:
                 self.svc.storage.delete_task(ctx.task_id)
-                return
+                return None
             task = rnd.task
             rnd.status = "succeeded"
             rnd.result_w, rnd.result_h = result.size
             rnd.download_w, rnd.download_h = download.size
             rnd.elapsed_s = round(time.monotonic() - started, 1)
             rnd.strategy = {**rnd.strategy, "plan": plan.to_json(), "scale": scale}
+            review_id = None
             if ctx.owned:
                 task.status = "reviewing"
                 review_job = Job(kind="review", task_id=task.id, round_id=rnd.id)
@@ -224,8 +238,7 @@ class Pipeline:
             else:
                 task.status, task.final_round_id = "done", rnd.id
             db.commit()
-        if review_id is not None:
-            self.svc.enqueue(review_id)
+            return review_id
 
     def _task_exists(self, task_id: str) -> bool:
         with self.svc.session_factory() as db:

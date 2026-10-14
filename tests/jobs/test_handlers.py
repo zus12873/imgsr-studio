@@ -7,6 +7,7 @@ import pytest
 from PIL import Image, ImageDraw
 from sqlalchemy import select
 
+import imgsr.jobs.handlers as handlers_mod
 from imgsr import quota
 from imgsr.config import Settings
 from imgsr.db.models import Job, Round, Task, UsageDaily, utcnow
@@ -240,5 +241,28 @@ async def test_on_interrupted_marks_states_and_refunds(sf, services, make_user):
         db.commit()
         rnd = db.get(Round, rid)
         assert (rnd.status, rnd.error) == ("failed", "服务重启")
+        assert db.get(Task, tid).status == "round_failed"
+        assert quota.used(db, f"user:{uid}", quota.today()) == 0
+
+
+async def test_save_failure_after_render_fails_round_and_refunds(sf, services, make_user, monkeypatch):
+    uid = make_user()
+    with sf() as db:
+        charge = quota.consume(db, [(f"user:{uid}", 50, "x")], quota.today())
+    svc, _ = services()
+    tid, rid, job = seed(sf, svc.storage, Image.new("RGB", (300, 200)), owner=uid, charge=charge)
+    real_save = handlers_mod.save_png
+
+    def failing_save(img, path):
+        if path.name == "result.png":
+            raise OSError(28, "No space left on device")
+        real_save(img, path)
+
+    monkeypatch.setattr(handlers_mod, "save_png", failing_save)
+    with pytest.raises(OSError):
+        await Pipeline(svc).generate(job)
+    with sf() as db:
+        rnd = db.get(Round, rid)
+        assert rnd.status == "failed" and "No space" in rnd.error
         assert db.get(Task, tid).status == "round_failed"
         assert quota.used(db, f"user:{uid}", quota.today()) == 0
