@@ -1,3 +1,4 @@
+import pytest
 from PIL import Image, ImageDraw
 
 from imgsr.pipeline.bands import Band, find_blank_bands
@@ -54,3 +55,21 @@ def test_accepts_rgb_images():
     ImageDraw.Draw(img).rectangle((0, 10, 100, 90), fill="black")
     ImageDraw.Draw(img).rectangle((200, 10, 299, 90), fill="black")
     assert inner(find_blank_bands(img, "x"), 300) == [(101, 200)]
+
+
+@pytest.mark.parametrize("frame", [4, 7, 20, 30])  # 2%, 3.5%, 10%, 15% of the 200-px lines
+def test_thick_frames_do_not_hide_bands(frame):
+    img = canvas(400, 200)
+    ImageDraw.Draw(img).rectangle((0, 0, 399, 199), outline=0, width=frame)
+    ink(img, (frame + 10, frame + 10, 150, 199 - frame - 10))
+    ink(img, (250, frame + 10, 399 - frame - 10, 199 - frame - 10))
+    assert inner(find_blank_bands(img, "x"), 400, margin=frame) == [(151, 250)]
+
+
+def test_content_near_the_edge_is_not_ignored():
+    img = canvas(1000, 300)
+    ink(img, (10, 10, 990, 100))
+    ink(img, (10, 200, 990, 290))
+    ink(img, (985, 140, 995, 160))  # small right-aligned badge in the outer 3% of each row
+    bands = inner(find_blank_bands(img, "y"), 300)
+    assert bands and all(not (b0 <= 150 < b1) for b0, b1 in bands)
