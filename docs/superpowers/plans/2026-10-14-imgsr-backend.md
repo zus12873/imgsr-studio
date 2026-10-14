@@ -81,7 +81,7 @@ imgsr-studio/
 **Interfaces:**
 - Produces: `imgsr.config.Settings`（字段见下）、`Settings.db_path / files_dir / backup_dir`、`Settings.with_overrides(dict) -> Settings`、`imgsr.config.OVERRIDABLE: dict[str, type]`
 
-- [ ] **Step 1: 写 `pyproject.toml` 与 `.python-version`**
+- [x] **Step 1: 写 `pyproject.toml` 与 `.python-version`**
 
 `pyproject.toml`:
 
@@ -126,7 +126,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.File", "f
 3.12
 ```
 
-- [ ] **Step 2: 安装解释器与依赖**
+- [x] **Step 2: 安装解释器与依赖**
 
 ```bash
 cd ~/Downloads/Projects/imgsr-studio
@@ -137,7 +137,7 @@ uv add --dev pytest pytest-asyncio ruff
 
 Expected: 生成 `uv.lock` 与 `.venv/`，无报错。
 
-- [ ] **Step 3: 写失败测试 `tests/test_config.py`**（同时创建空的 `tests/__init__.py`）
+- [x] **Step 3: 写失败测试 `tests/test_config.py`**（同时创建空的 `tests/__init__.py`）
 
 ```python
 from pathlib import Path
@@ -180,12 +180,12 @@ def test_with_overrides_casts_and_ignores_unknown_and_secrets():
     assert "open_api_key" not in OVERRIDABLE
 ```
 
-- [ ] **Step 4: 运行，确认失败**
+- [x] **Step 4: 运行，确认失败**
 
 Run: `uv run pytest tests/test_config.py -q`
 Expected: FAIL，`ModuleNotFoundError: No module named 'imgsr'`
 
-- [ ] **Step 5: 实现 `src/imgsr/__init__.py` 与 `src/imgsr/config.py`**
+- [x] **Step 5: 实现 `src/imgsr/__init__.py` 与 `src/imgsr/config.py`**
 
 `src/imgsr/__init__.py`:
 
@@ -265,12 +265,12 @@ class Settings(BaseSettings):
         return self.model_copy(update=clean)
 ```
 
-- [ ] **Step 6: 运行，确认通过**
+- [x] **Step 6: 运行，确认通过**
 
 Run: `uv run pytest tests/test_config.py -q && uv run ruff check src tests`
 Expected: `3 passed`；ruff `All checks passed!`
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add pyproject.toml uv.lock .python-version src/imgsr/__init__.py src/imgsr/config.py tests/__init__.py tests/test_config.py
@@ -287,7 +287,7 @@ git commit -m "chore: scaffold imgsr package and settings" -m "Co-Authored-By: C
 **Interfaces:**
 - Produces: `Axis = Literal["x", "y"]`；`Band(start: int, end: int)`（`end` 不含），属性 `center`, `width`；`find_blank_bands(img, axis, *, min_width=8, max_std=3.0, edge_trim_ratio=0.03) -> list[Band]`。`axis="x"` 扫描列（竖向空白带，用于沿 x 切），`axis="y"` 扫描行。
 
-- [ ] **Step 1: 写失败测试 `tests/pipeline/test_bands.py`**
+- [x] **Step 1: 写失败测试 `tests/pipeline/test_bands.py`**
 
 ```python
 from PIL import Image, ImageDraw
@@ -348,12 +348,12 @@ def test_accepts_rgb_images():
     assert inner(find_blank_bands(img, "x"), 300) == [(101, 200)]
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/pipeline/test_bands.py -q`
 Expected: FAIL，`ModuleNotFoundError: No module named 'imgsr.pipeline'`
 
-- [ ] **Step 3: 实现 `src/imgsr/pipeline/bands.py`**（并创建空的 `src/imgsr/pipeline/__init__.py`、`tests/pipeline/__init__.py`）
+- [x] **Step 3: 实现 `src/imgsr/pipeline/bands.py`**（并创建空的 `src/imgsr/pipeline/__init__.py`、`tests/pipeline/__init__.py`）
 
 ```python
 """Detect blank (near-uniform) bands of rows or columns where an image can be cut."""
@@ -416,12 +416,12 @@ def find_blank_bands(
     return bands
 ```
 
-- [ ] **Step 4: 运行，确认通过**
+- [x] **Step 4: 运行，确认通过**
 
 Run: `uv run pytest tests/pipeline/test_bands.py -q && uv run ruff check src tests`
 Expected: `6 passed`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/imgsr/pipeline/__init__.py src/imgsr/pipeline/bands.py tests/pipeline/__init__.py tests/pipeline/test_bands.py
@@ -446,7 +446,7 @@ git commit -m "feat: detect blank bands for tile seams" -m "Co-Authored-By: Clau
 
 规则（spec §6.3）：有效上限 `eff = cap // preupscale²`；`whole` 或 `auto` 且面积 ≤ eff → 整图；否则沿长边找空白带，目标块数 `ceil(area / (0.95·eff))`（`tiles` 模式至少 2）。选缝先试“按理想位置均分”，若因重叠导致某块超限，则退回“贪心装满”（每块取能装下的最远空白带）；块仍超限时在块内沿另一方向再切一层；一个缝都找不到 → 整图 + `NO_BAND_NOTE`。
 
-- [ ] **Step 1: 写失败测试 `tests/pipeline/test_tiling.py`**
+- [x] **Step 1: 写失败测试 `tests/pipeline/test_tiling.py`**
 
 ```python
 from PIL import Image, ImageDraw
@@ -522,12 +522,12 @@ def test_box_intersect():
     assert Box(0, 0, 10, 10).intersect(Box(5, 2, 20, 8)) == Box(5, 2, 10, 8)
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/pipeline/test_tiling.py -q`
 Expected: FAIL，`ModuleNotFoundError: No module named 'imgsr.pipeline.tiling'`
 
-- [ ] **Step 3: 实现 `src/imgsr/pipeline/tiling.py`**
+- [x] **Step 3: 实现 `src/imgsr/pipeline/tiling.py`**
 
 ```python
 """Plan how to cut an image into tiles that each fit the relay's output pixel cap."""
@@ -709,12 +709,12 @@ def _plan_region(
     return tiles, notes
 ```
 
-- [ ] **Step 4: 运行，确认通过**
+- [x] **Step 4: 运行，确认通过**
 
 Run: `uv run pytest tests/pipeline -q && uv run ruff check src tests`
 Expected: 全部 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/imgsr/pipeline/tiling.py tests/pipeline/test_tiling.py
@@ -739,7 +739,7 @@ git commit -m "feat: plan tiles under the relay pixel cap" -m "Co-Authored-By: C
   - `stitch(plan, outputs, src_size) -> tuple[Image, float]`（返回拼接图与“源像素→结果像素”的倍率）
   - `make_download(result, src_size) -> Image`（比原图小则 Lanczos 放大到原图尺寸）
 
-- [ ] **Step 1: 写失败测试 `tests/pipeline/test_compose.py`**
+- [x] **Step 1: 写失败测试 `tests/pipeline/test_compose.py`**
 
 ```python
 from PIL import Image
@@ -832,12 +832,12 @@ def test_make_download_never_smaller_than_source():
     assert make_download(big, (100, 50)) is big
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/pipeline/test_compose.py -q`
 Expected: FAIL，`ModuleNotFoundError`
 
-- [ ] **Step 3: 实现 `src/imgsr/pipeline/compose.py`**
+- [x] **Step 3: 实现 `src/imgsr/pipeline/compose.py`**
 
 ```python
 """Pure image operations around the model call: padding, scaling, stitching."""
@@ -931,12 +931,12 @@ def make_download(result: Image.Image, src_size: tuple[int, int]) -> Image.Image
     return result.resize(src_size, Image.LANCZOS)
 ```
 
-- [ ] **Step 4: 运行，确认通过**
+- [x] **Step 4: 运行，确认通过**
 
 Run: `uv run pytest tests/pipeline -q && uv run ruff check src tests`
 Expected: 全部 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/imgsr/pipeline/compose.py tests/pipeline/test_compose.py
@@ -957,7 +957,7 @@ git commit -m "feat: pad, stitch and size tile outputs" -m "Co-Authored-By: Clau
   - `normalize(text) -> str`：半角标点转全角、统一引号、去掉空白/破折号/省略号/项目符号/`.`/`[?]`
   - `compare(expected: str, found: str) -> list[Diff]`
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 `tests/pipeline/test_prompt.py`:
 
@@ -1021,12 +1021,12 @@ def test_to_json():
     assert Diff("a", "b", "c").to_json() == {"expected": "a", "found": "b", "sentence": "c"}
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/pipeline/test_prompt.py tests/pipeline/test_textdiff.py -q`
 Expected: FAIL，`ModuleNotFoundError`
 
-- [ ] **Step 3: 实现 `src/imgsr/pipeline/prompt.py`**
+- [x] **Step 3: 实现 `src/imgsr/pipeline/prompt.py`**
 
 ```python
 """Prompt texts. BASE_PROMPT was validated in the 2026-10-13 probes."""
@@ -1066,7 +1066,7 @@ def build_prompt(base: str, hint_text: str | None) -> str:
     )
 ```
 
-- [ ] **Step 4: 实现 `src/imgsr/pipeline/textdiff.py`**
+- [x] **Step 4: 实现 `src/imgsr/pipeline/textdiff.py`**
 
 ```python
 """Character-level comparison between the confirmed text and a transcript of the result."""
@@ -1119,12 +1119,12 @@ def compare(expected: str, found: str) -> list[Diff]:
     return diffs
 ```
 
-- [ ] **Step 5: 运行，确认通过**
+- [x] **Step 5: 运行，确认通过**
 
 Run: `uv run pytest tests/pipeline -q && uv run ruff check src tests`
 Expected: 全部 passed（若 ruff 对 `_PUNCT` 的多键一行报格式问题，按 ruff 建议拆行，不改语义）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/imgsr/pipeline/prompt.py src/imgsr/pipeline/textdiff.py tests/pipeline/test_prompt.py tests/pipeline/test_textdiff.py
@@ -1141,7 +1141,7 @@ git commit -m "feat: prompt builder and character-level text diff" -m "Co-Author
 **Interfaces:**
 - Produces: `slice_for_tile(confirmed: str, tile_transcript: str) -> str`——从确认原文中截出该切块对应的片段；无重叠返回 `""`。
 
-- [ ] **Step 1: 写失败测试 `tests/pipeline/test_align.py`**
+- [x] **Step 1: 写失败测试 `tests/pipeline/test_align.py`**
 
 ```python
 from imgsr.pipeline.align import slice_for_tile
@@ -1171,12 +1171,12 @@ def test_empty_inputs():
     assert slice_for_tile("abc", "  ") == ""
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/pipeline/test_align.py -q`
 Expected: FAIL，`ModuleNotFoundError`
 
-- [ ] **Step 3: 实现 `src/imgsr/pipeline/align.py`**
+- [x] **Step 3: 实现 `src/imgsr/pipeline/align.py`**
 
 ```python
 """Find the part of the confirmed text that one tile shows."""
@@ -1213,12 +1213,12 @@ def slice_for_tile(confirmed: str, tile_transcript: str) -> str:
     return confirmed[start:end].strip()
 ```
 
-- [ ] **Step 4: 运行，确认通过**
+- [x] **Step 4: 运行，确认通过**
 
 Run: `uv run pytest tests/pipeline -q && uv run ruff check src tests`
 Expected: 全部 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/imgsr/pipeline/align.py tests/pipeline/test_align.py
@@ -1237,7 +1237,7 @@ git commit -m "feat: align tile transcripts to confirmed text" -m "Co-Authored-B
 - Produces: `Action = Literal["accept","retry_with_hint","tile_refine","manual_check"]`；`Suggestion(action, reason, diff_ids: list[int], params: dict)`，`to_json()`；`suggest(diffs, *, has_text: bool, used_hint: bool, preupscale: int, previous: list[Diff] | None) -> list[Suggestion]`。
 - `params` 的键与 `POST /rounds` 请求体一致：`use_text_hint`、`strategy`、`preupscale`。
 
-- [ ] **Step 1: 写失败测试 `tests/review/test_rules.py`**
+- [x] **Step 1: 写失败测试 `tests/review/test_rules.py`**
 
 ```python
 from imgsr.pipeline.textdiff import Diff
@@ -1302,12 +1302,12 @@ def test_to_json():
     }
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/review -q`
 Expected: FAIL，`ModuleNotFoundError`
 
-- [ ] **Step 3: 实现 `src/imgsr/review/rules.py`**
+- [x] **Step 3: 实现 `src/imgsr/review/rules.py`**
 
 ```python
 """Rule engine: review diffs -> short list of next-step suggestions (spec §6.5)."""
@@ -1373,12 +1373,12 @@ def suggest(
     return out
 ```
 
-- [ ] **Step 4: 运行，确认通过**
+- [x] **Step 4: 运行，确认通过**
 
 Run: `uv run pytest tests/review -q && uv run ruff check src tests`
 Expected: `8 passed`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/imgsr/review/__init__.py src/imgsr/review/rules.py tests/review/__init__.py tests/review/test_rules.py
@@ -1400,7 +1400,7 @@ git commit -m "feat: rule engine for review suggestions" -m "Co-Authored-By: Cla
   - `request_size(w, h) -> str`；`ImageClient(base_url, api_key, *, timeout=180.0, transport=None)`：`async edit(*, model, prompt, image_png: bytes, size: tuple[int,int]) -> bytes`、`async aclose()`
   - `ChatClient(base_url, api_key, *, timeout=240.0, transport=None)`：`async transcribe(*, model, prompt, image_png: bytes) -> str`、`async aclose()`
 
-- [ ] **Step 1: 写失败测试 `tests/relay/test_relay.py`**
+- [x] **Step 1: 写失败测试 `tests/relay/test_relay.py`**
 
 ```python
 import base64
@@ -1631,12 +1631,12 @@ async def test_with_retries_does_not_retry_rejections():
     assert len(attempts) == 1
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/relay -q`
 Expected: FAIL，`ModuleNotFoundError: No module named 'imgsr.relay'`
 
-- [ ] **Step 3: 实现 `src/imgsr/relay/base.py`、`errors.py`、`retry.py`**
+- [x] **Step 3: 实现 `src/imgsr/relay/base.py`、`errors.py`、`retry.py`**
 
 `src/imgsr/relay/base.py`:
 
@@ -1729,7 +1729,7 @@ async def with_retries(
     raise AssertionError("unreachable")
 ```
 
-- [ ] **Step 4: 实现 `src/imgsr/relay/images.py`**
+- [x] **Step 4: 实现 `src/imgsr/relay/images.py`**
 
 ```python
 """Client for the relay's OpenAI-compatible image edit endpoint."""
@@ -1821,7 +1821,7 @@ class ImageClient:
         return response
 ```
 
-- [ ] **Step 5: 实现 `src/imgsr/relay/chat.py`**
+- [x] **Step 5: 实现 `src/imgsr/relay/chat.py`**
 
 ```python
 """Streaming vision chat client used to transcribe text in images."""
@@ -1910,12 +1910,12 @@ class ChatClient:
         return text
 ```
 
-- [ ] **Step 6: 运行，确认通过**
+- [x] **Step 6: 运行，确认通过**
 
 Run: `uv run pytest tests/relay -q && uv run ruff check src tests`
 Expected: 全部 passed
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/imgsr/relay tests/relay
@@ -1937,7 +1937,7 @@ git commit -m "feat: relay clients for image edits and streamed transcription" -
   - 测试夹具（`tests/conftest.py`）：`engine`, `sf`
 - 注意：JSON 列修改时必须**整体重新赋值**（如 `task.tile_transcripts = {...}`），不要原地修改字典。
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 `tests/conftest.py`:
 
@@ -1990,12 +1990,12 @@ def test_foreign_keys_and_wal_enabled(tmp_path):
     engine.dispose()
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/db -q`
 Expected: FAIL，`ModuleNotFoundError: No module named 'imgsr.db'`
 
-- [ ] **Step 3: 实现 `src/imgsr/db/models.py`**
+- [x] **Step 3: 实现 `src/imgsr/db/models.py`**
 
 ```python
 """SQLAlchemy models. Timestamps are naive UTC (see utcnow)."""
@@ -2126,7 +2126,7 @@ class SettingRow(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 ```
 
-- [ ] **Step 4: 实现 `src/imgsr/db/session.py`**
+- [x] **Step 4: 实现 `src/imgsr/db/session.py`**
 
 ```python
 """Engine/session factories and programmatic Alembic upgrades."""
@@ -2170,7 +2170,7 @@ def migrate(engine: Engine) -> None:
         command.upgrade(cfg, "head")
 ```
 
-- [ ] **Step 5: 生成 Alembic 骨架并替换 `env.py`**
+- [x] **Step 5: 生成 Alembic 骨架并替换 `env.py`**
 
 ```bash
 uv run alembic init src/imgsr/db/migrations
@@ -2225,7 +2225,7 @@ else:
     run_migrations_online()
 ```
 
-- [ ] **Step 6: 自动生成初始迁移**
+- [x] **Step 6: 自动生成初始迁移**
 
 ```bash
 DATA_DIR=./data uv run alembic revision --autogenerate -m "initial schema"
@@ -2233,12 +2233,12 @@ DATA_DIR=./data uv run alembic revision --autogenerate -m "initial schema"
 
 Expected: 新文件 `src/imgsr/db/migrations/versions/<rev>_initial_schema.py`，包含 7 个 `op.create_table`（users、sessions、tasks、rounds、jobs、usage_daily、settings）。打开检查确认无多余操作。
 
-- [ ] **Step 7: 运行，确认通过**
+- [x] **Step 7: 运行，确认通过**
 
 Run: `uv run pytest tests/db -q && uv run ruff check src tests`
 Expected: `2 passed`。若 `compare_metadata` 只报告 SQLite 反射造成的无名唯一约束差异（`add_constraint`/`remove_constraint`），先确认迁移文件里确有对应 `UniqueConstraint`，再在测试里过滤这两类条目，并在“执行记录”写明原因；其他差异一律按真问题排查（ruff 若对生成的迁移文件报风格问题，运行 `uv run ruff check --fix src/imgsr/db/migrations` 后重跑）
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add alembic.ini src/imgsr/db tests/conftest.py tests/db
@@ -2258,7 +2258,7 @@ git commit -m "feat: database models and initial migration" -m "Co-Authored-By: 
   - `save_png(img, path)`、`png_bytes(img) -> bytes`
   - `UploadRejected(Exception)`（中文消息）；`normalize_upload(data, *, max_bytes, max_pixels) -> Image`（RGB，已按 EXIF 转正，已去 EXIF）
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 `tests/test_storage.py`:
 
@@ -2385,12 +2385,12 @@ def test_too_many_pixels():
         normalize_upload(data, max_bytes=15_000_000, max_pixels=10_000)
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/test_storage.py tests/test_uploads.py -q`
 Expected: FAIL，`ModuleNotFoundError`
 
-- [ ] **Step 3: 实现 `src/imgsr/storage.py`**
+- [x] **Step 3: 实现 `src/imgsr/storage.py`**
 
 ```python
 """Filesystem layout for task images. All paths derive from the task id."""
@@ -2475,7 +2475,7 @@ class Storage:
         return shutil.disk_usage(self.root).free
 ```
 
-- [ ] **Step 4: 实现 `src/imgsr/uploads.py`**
+- [x] **Step 4: 实现 `src/imgsr/uploads.py`**
 
 ```python
 """Validate and normalise user uploads into a plain RGB image."""
@@ -2534,12 +2534,12 @@ def _to_rgb(img: Image.Image) -> Image.Image:
     return rgb
 ```
 
-- [ ] **Step 5: 运行，确认通过**
+- [x] **Step 5: 运行，确认通过**
 
 Run: `uv run pytest tests/test_storage.py tests/test_uploads.py -q && uv run ruff check src tests`
 Expected: 全部 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/imgsr/storage.py src/imgsr/uploads.py tests/test_storage.py tests/test_uploads.py
@@ -2561,7 +2561,7 @@ git commit -m "feat: task file storage and upload normalisation" -m "Co-Authored
   - `QuotaExceeded(Exception)`、`today(now=None) -> date`（UTC+8）、`consume(db, limits: list[tuple[subject, limit, message]], day) -> dict`（**须在会话无其他待提交改动时调用**）、`refund(db, charge | None)`、`count_llm(db, subject, day)`、`used(db, subject, day) -> int`
   - 夹具：`make_user(username="alice", password="password123", role="user", daily_quota=50) -> int`、`make_task(task_id=None, *, owner=None, ip="1.2.3.4", w=100, h=100, status="uploaded", expires_at=None, **kw) -> str`
 
-- [ ] **Step 1: 追加夹具到 `tests/conftest.py`**
+- [x] **Step 1: 追加夹具到 `tests/conftest.py`**
 
 在文件末尾追加：
 
@@ -2606,7 +2606,7 @@ def make_task(sf):
 
 （把新增的 import 移到文件顶部，保持 ruff `I` 规则通过。）
 
-- [ ] **Step 2: 写失败测试**
+- [x] **Step 2: 写失败测试**
 
 `tests/test_auth.py`:
 
@@ -2777,12 +2777,12 @@ def test_today_uses_utc_plus_8():
     assert today(datetime(2026, 10, 13, 15, 59, tzinfo=UTC)) == date(2026, 10, 13)
 ```
 
-- [ ] **Step 3: 运行，确认失败**
+- [x] **Step 3: 运行，确认失败**
 
 Run: `uv run pytest tests/test_auth.py tests/test_clientip.py tests/test_quota.py -q`
 Expected: FAIL，`ModuleNotFoundError`
 
-- [ ] **Step 4: 实现 `src/imgsr/auth.py`**
+- [x] **Step 4: 实现 `src/imgsr/auth.py`**
 
 ```python
 """Passwords, cookie sessions and login throttling."""
@@ -2886,7 +2886,7 @@ class LoginLimiter:
         self._failures.pop(ip, None)
 ```
 
-- [ ] **Step 5: 实现 `src/imgsr/clientip.py`**
+- [x] **Step 5: 实现 `src/imgsr/clientip.py`**
 
 ```python
 """Resolve the real client IP behind trusted reverse proxies."""
@@ -2931,7 +2931,7 @@ def resolve_client_ip(
     return candidates[0] if candidates else peer
 ```
 
-- [ ] **Step 6: 实现 `src/imgsr/quota.py`**
+- [x] **Step 6: 实现 `src/imgsr/quota.py`**
 
 ```python
 """Daily usage counters (UTC+8 days) used for rate limits."""
@@ -3006,12 +3006,12 @@ def used(db: Session, subject: str, day: date) -> int:
     return row.image_calls if row else 0
 ```
 
-- [ ] **Step 7: 运行，确认通过**
+- [x] **Step 7: 运行，确认通过**
 
 Run: `uv run pytest tests/test_auth.py tests/test_clientip.py tests/test_quota.py -q && uv run ruff check src tests`
 Expected: 全部 passed
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/imgsr/auth.py src/imgsr/clientip.py src/imgsr/quota.py tests/conftest.py tests/test_auth.py tests/test_clientip.py tests/test_quota.py
@@ -3030,7 +3030,7 @@ git commit -m "feat: sessions, trusted client IP and daily quotas" -m "Co-Author
 - Produces: `Handler = Callable[[int], Awaitable[None]]`；`InterruptHook = Callable[[Session, Job], None]`；`JobRunner(session_factory, handlers=None, *, workers=4, on_interrupted=None)`：属性 `handlers: dict[str, Handler]`、`on_interrupted`；`recover() -> list[int]`、`async start()`、`async stop()`、`enqueue(job_id)`（**线程安全**，可在同步路由线程中调用）、`async join()`
 - 行为：只运行 `status == "queued"` 的任务；handler 抛出的异常写进 `jobs.error`，任务置 `failed`；启动时把 `running` 置 `failed`（`"服务重启"`）并调用 `on_interrupted`，`queued` 重新入队。
 
-- [ ] **Step 1: 写失败测试 `tests/jobs/test_runner.py`**
+- [x] **Step 1: 写失败测试 `tests/jobs/test_runner.py`**
 
 ```python
 import asyncio
@@ -3133,12 +3133,12 @@ async def test_missing_job_and_unknown_kind_do_not_crash(sf, make_task):
     assert status_of(sf, job_id)[0] == "failed"
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/jobs/test_runner.py -q`
 Expected: FAIL，`ModuleNotFoundError`
 
-- [ ] **Step 3: 实现 `src/imgsr/jobs/runner.py`**
+- [x] **Step 3: 实现 `src/imgsr/jobs/runner.py`**
 
 ```python
 """In-process job queue: asyncio workers running handlers for rows in the `jobs` table."""
@@ -3248,12 +3248,12 @@ class JobRunner:
                  job_id, kind, status, time.monotonic() - started, error)
 ```
 
-- [ ] **Step 4: 运行，确认通过**
+- [x] **Step 4: 运行，确认通过**
 
 Run: `uv run pytest tests/jobs/test_runner.py -q && uv run ruff check src tests`
 Expected: `5 passed`
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/imgsr/jobs/__init__.py src/imgsr/jobs/runner.py tests/jobs/__init__.py tests/jobs/test_runner.py
@@ -3279,7 +3279,7 @@ git commit -m "feat: in-process job runner with restart recovery" -m "Co-Authore
   - review：round.review = `{"model", "transcript", "diffs": [Diff.to_json()], "suggestions": [Suggestion.to_json()]}`，失败时额外带 `"error"`；task → `reviewed`
 - `tests/fakes.py` 提供 `FakeImages(scale=1.0, fail=None)`（属性 `calls`、`gate: threading.Event | None`、`fail`）、`FakeChat(reply=None, fail=None)`（`reply(call_index, image_size) -> str`，属性 `calls`）、`png_of(size, color)`。
 
-- [ ] **Step 1: 写 `tests/fakes.py`**
+- [x] **Step 1: 写 `tests/fakes.py`**
 
 ```python
 """Test doubles for the relay clients (no network)."""
@@ -3334,7 +3334,7 @@ class FakeChat:
         return self.reply(len(self.calls) - 1, size)
 ```
 
-- [ ] **Step 2: 写失败测试 `tests/jobs/test_handlers.py`**
+- [x] **Step 2: 写失败测试 `tests/jobs/test_handlers.py`**
 
 ```python
 import asyncio
@@ -3580,12 +3580,12 @@ async def test_on_interrupted_marks_states_and_refunds(sf, services, make_user):
         assert quota.used(db, f"user:{uid}", quota.today()) == 0
 ```
 
-- [ ] **Step 3: 运行，确认失败**
+- [x] **Step 3: 运行，确认失败**
 
 Run: `uv run pytest tests/jobs/test_handlers.py -q`
 Expected: FAIL，`ModuleNotFoundError: No module named 'imgsr.jobs.handlers'`
 
-- [ ] **Step 4: 实现 `src/imgsr/jobs/handlers.py`**
+- [x] **Step 4: 实现 `src/imgsr/jobs/handlers.py`**
 
 ```python
 """Job handlers: transcribe -> generate -> review, orchestrating pure steps and the relay."""
@@ -3946,12 +3946,12 @@ class Pipeline:
             rnd.task.status = "reviewed"
 ```
 
-- [ ] **Step 5: 运行，确认通过**
+- [x] **Step 5: 运行，确认通过**
 
 Run: `uv run pytest tests/jobs -q && uv run ruff check src tests`
 Expected: 全部 passed（ruff 若报行长以外的问题按提示修正；`B023` 闭包在循环中的提示若出现，确认 lambda 捕获的是当前作用域局部变量即可加 `# noqa: B023` 并说明）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/imgsr/jobs/handlers.py tests/fakes.py tests/jobs/test_handlers.py
@@ -3975,7 +3975,7 @@ git commit -m "feat: transcribe, generate and review job handlers" -m "Co-Author
   - 测试夹具 `make_api(**settings_overrides) -> SimpleNamespace(client, app, images, chat, ctx)`、`api`；助手 `add_user`, `login`, `upload`, `wait_task`
 - 注意：Starlette `TestClient(..., client=("127.0.0.1", 50000))` 需要较新的 starlette；若报 `TypeError: unexpected keyword 'client'`，运行 `uv add "starlette>=0.40"` 后重试。
 
-- [ ] **Step 1: 写 `src/imgsr/maintenance.py`**（供 app 引用；单测在 Task 18）
+- [x] **Step 1: 写 `src/imgsr/maintenance.py`**（供 app 引用；单测在 Task 18）
 
 ```python
 """Periodic housekeeping: delete expired tasks, back up SQLite."""
@@ -4048,7 +4048,7 @@ async def maintenance_loop(sf: sessionmaker[Session], storage: Storage, engine: 
         await asyncio.sleep(interval_s)
 ```
 
-- [ ] **Step 2: 写失败测试 `tests/test_config_store.py`**
+- [x] **Step 2: 写失败测试 `tests/test_config_store.py`**
 
 ```python
 import pytest
@@ -4226,12 +4226,12 @@ def test_health(api):
     assert body["ok"] is True and body["free_bytes"] > 0 and body["low_disk"] is False
 ```
 
-- [ ] **Step 3: 运行，确认失败**
+- [x] **Step 3: 运行，确认失败**
 
 Run: `uv run pytest tests/test_config_store.py tests/api -q`
 Expected: FAIL，`ModuleNotFoundError: No module named 'imgsr.config_store'`
 
-- [ ] **Step 4: 实现 `src/imgsr/config_store.py`**
+- [x] **Step 4: 实现 `src/imgsr/config_store.py`**
 
 ```python
 """Admin-editable settings layered over environment defaults."""
@@ -4305,7 +4305,7 @@ class SettingsProvider:
         return self()
 ```
 
-- [ ] **Step 5: 实现 `src/imgsr/api/deps.py`**
+- [x] **Step 5: 实现 `src/imgsr/api/deps.py`**
 
 ```python
 """Shared FastAPI dependencies and helpers."""
@@ -4385,7 +4385,7 @@ async def read_upload(file: UploadFile, c: AppContext) -> Image.Image:
         raise HTTPException(400, str(exc)) from exc
 ```
 
-- [ ] **Step 6: 实现 `src/imgsr/api/schemas.py`**
+- [x] **Step 6: 实现 `src/imgsr/api/schemas.py`**
 
 ```python
 """Response/request models shared by the routers."""
@@ -4495,7 +4495,7 @@ def guest_task_out(task: Task) -> GuestTaskOut:
     )
 ```
 
-- [ ] **Step 7: 实现 `src/imgsr/api/routes_auth.py`**
+- [x] **Step 7: 实现 `src/imgsr/api/routes_auth.py`**
 
 ```python
 """Login, logout and the current user."""
@@ -4564,7 +4564,7 @@ def me(user: User = Depends(current_user), db: Session = Depends(db_session)) ->
     return me_out(db, user)
 ```
 
-- [ ] **Step 8: 实现 `src/imgsr/api/app.py`**
+- [x] **Step 8: 实现 `src/imgsr/api/app.py`**
 
 ```python
 """FastAPI application factory."""
@@ -4672,12 +4672,12 @@ def create_app(
     return app
 ```
 
-- [ ] **Step 9: 运行，确认通过**
+- [x] **Step 9: 运行，确认通过**
 
 Run: `uv run pytest -q && uv run ruff check src tests`
 Expected: 全部 passed
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add src/imgsr/config_store.py src/imgsr/maintenance.py src/imgsr/api tests/test_config_store.py tests/api
@@ -4705,7 +4705,7 @@ git commit -m "feat: app factory, auth endpoints and admin-overridable settings"
   - `GET /api/files/{task_id}/{name}?download=1` → 图片（登录用户本人或持有对应 guest cookie）
 - 错误码：401 未登录、404 不存在或非本人、409 状态冲突、429 额度用尽、400 参数/上传问题、507 磁盘不足。
 
-- [ ] **Step 1: 写失败测试 `tests/api/test_tasks_api.py`**
+- [x] **Step 1: 写失败测试 `tests/api/test_tasks_api.py`**
 
 ```python
 import threading
@@ -4855,12 +4855,12 @@ def test_retry_transcription(api):
     wait_task(api.client, tid, lambda b: b["status"] == "awaiting_confirm")
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/api/test_tasks_api.py -q`
 Expected: FAIL（404/405，路由不存在）
 
-- [ ] **Step 3: 实现 `src/imgsr/api/routes_tasks.py`**
+- [x] **Step 3: 实现 `src/imgsr/api/routes_tasks.py`**
 
 ```python
 """Logged-in user's tasks: upload, confirm text, rounds, final, delete."""
@@ -5074,7 +5074,7 @@ def set_final(task_id: str, body: FinalIn, user: User = Depends(current_user),
     return task_out(db, task)
 ```
 
-- [ ] **Step 4: 实现 `src/imgsr/api/routes_files.py`**
+- [x] **Step 4: 实现 `src/imgsr/api/routes_files.py`**
 
 ```python
 """Serve task images to their owner (logged-in user or the guest cookie holder)."""
@@ -5117,7 +5117,7 @@ def get_file(task_id: str, name: str, request: Request, download: bool = False,
     return FileResponse(path, headers=headers)
 ```
 
-- [ ] **Step 5: 修改 `src/imgsr/api/app.py`**
+- [x] **Step 5: 修改 `src/imgsr/api/app.py`**
 
 把 `from imgsr.api import routes_auth` 改为：
 
@@ -5131,12 +5131,12 @@ from imgsr.api import routes_auth, routes_files, routes_tasks
 ROUTERS = (routes_auth, routes_tasks, routes_files)
 ```
 
-- [ ] **Step 6: 运行，确认通过**
+- [x] **Step 6: 运行，确认通过**
 
 Run: `uv run pytest -q && uv run ruff check src tests`
 Expected: 全部 passed
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/imgsr/api/routes_tasks.py src/imgsr/api/routes_files.py src/imgsr/api/app.py tests/api/test_tasks_api.py
@@ -5158,7 +5158,7 @@ git commit -m "feat: task, round and file endpoints for logged-in users" -m "Co-
   - `GET /api/guest/quota` → `{"limit", "remaining", "global_remaining"}`
 - 限额消息：IP 用尽 `今日免费次数已用完，登录后可继续使用`；全站用尽 `今日游客总额度已用完，请明天再来`；同 IP 已有任务 409 `当前网络已有任务在处理中，请稍候`。
 
-- [ ] **Step 1: 写失败测试 `tests/api/test_guest_api.py`**
+- [x] **Step 1: 写失败测试 `tests/api/test_guest_api.py`**
 
 ```python
 import threading
@@ -5239,12 +5239,12 @@ def test_guest_tasks_are_not_in_user_history(api):
     assert api.client.get("/api/tasks").json()["items"] == []
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/api/test_guest_api.py -q`
 Expected: FAIL（404，路由不存在）
 
-- [ ] **Step 3: 实现 `src/imgsr/api/routes_guest.py`**
+- [x] **Step 3: 实现 `src/imgsr/api/routes_guest.py`**
 
 ```python
 """Guest (no login) single-round generation with per-IP and global daily caps."""
@@ -5351,7 +5351,7 @@ def guest_quota(db: Session = Depends(db_session), c: AppContext = Depends(get_c
     }
 ```
 
-- [ ] **Step 4: 修改 `src/imgsr/api/app.py`**
+- [x] **Step 4: 修改 `src/imgsr/api/app.py`**
 
 ```python
 from imgsr.api import routes_auth, routes_files, routes_guest, routes_tasks
@@ -5361,12 +5361,12 @@ from imgsr.api import routes_auth, routes_files, routes_guest, routes_tasks
 ROUTERS = (routes_auth, routes_tasks, routes_files, routes_guest)
 ```
 
-- [ ] **Step 5: 运行，确认通过**
+- [x] **Step 5: 运行，确认通过**
 
 Run: `uv run pytest -q && uv run ruff check src tests`
 Expected: 全部 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/imgsr/api/routes_guest.py src/imgsr/api/app.py tests/api/test_guest_api.py
@@ -5387,7 +5387,7 @@ git commit -m "feat: guest endpoints with per-IP and global daily caps" -m "Co-A
   - `GET /api/admin/settings` → `{"effective": {OVERRIDABLE 键: 值}, "overrides": {...}, "restart_required": ["upstream_concurrency"]}`；`PATCH /api/admin/settings` `{key: value}` → 同上（校验失败 400）
 - `UserOut = {id, username, role, daily_quota, disabled, created_at, used_today}`
 
-- [ ] **Step 1: 写失败测试 `tests/api/test_admin_api.py`**
+- [x] **Step 1: 写失败测试 `tests/api/test_admin_api.py`**
 
 ```python
 from imgsr.auth import create_session, user_for_token
@@ -5468,12 +5468,12 @@ def test_settings_validation(api):
     assert api.client.patch("/api/admin/settings", json={"pixel_cap": 10}).status_code == 400
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/api/test_admin_api.py -q`
 Expected: FAIL（404，路由不存在）
 
-- [ ] **Step 3: 实现 `src/imgsr/api/routes_admin.py`**
+- [x] **Step 3: 实现 `src/imgsr/api/routes_admin.py`**
 
 ```python
 """Admin: user management and runtime settings."""
@@ -5590,7 +5590,7 @@ def patch_settings(changes: dict[str, Any] = Body(...), c: AppContext = Depends(
     return _settings_view(c)
 ```
 
-- [ ] **Step 4: 修改 `src/imgsr/api/app.py`**
+- [x] **Step 4: 修改 `src/imgsr/api/app.py`**
 
 ```python
 from imgsr.api import routes_admin, routes_auth, routes_files, routes_guest, routes_tasks
@@ -5600,12 +5600,12 @@ from imgsr.api import routes_admin, routes_auth, routes_files, routes_guest, rou
 ROUTERS = (routes_auth, routes_tasks, routes_files, routes_guest, routes_admin)
 ```
 
-- [ ] **Step 5: 运行，确认通过**
+- [x] **Step 5: 运行，确认通过**
 
 Run: `uv run pytest -q && uv run ruff check src tests`
 Expected: 全部 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/imgsr/api/routes_admin.py src/imgsr/api/app.py tests/api/test_admin_api.py
@@ -5623,7 +5623,7 @@ git commit -m "feat: admin endpoints for users and runtime settings" -m "Co-Auth
 - Consumes: `cleanup_expired`, `backup_db`（Task 14 已实现）
 - Produces: `imgsr.cli.main(argv=None) -> int`；子命令 `create-user USERNAME [--admin] [--quota N] [--password-stdin]`、`reset-password USERNAME [--password-stdin]`、`cleanup`、`serve [--host] [--port]`。错误打印 `错误：…` 到 stderr 并返回 1。
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 `tests/test_maintenance.py`:
 
@@ -5720,12 +5720,12 @@ def test_cleanup_command(tmp_path, monkeypatch, capsys):
     assert "已清理 0 个过期任务" in capsys.readouterr().out
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/test_maintenance.py tests/test_cli.py -q`
 Expected: `test_maintenance.py` 通过（实现已在 Task 14）；`test_cli.py` FAIL，`ModuleNotFoundError: No module named 'imgsr.cli'`
 
-- [ ] **Step 3: 实现 `src/imgsr/cli.py`**
+- [x] **Step 3: 实现 `src/imgsr/cli.py`**
 
 ```python
 """`imgsr` command line: user management, maintenance and the web server."""
@@ -5825,12 +5825,12 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 ```
 
-- [ ] **Step 4: 运行，确认通过**
+- [x] **Step 4: 运行，确认通过**
 
 Run: `uv run pytest -q && uv run ruff check src tests`
 Expected: 全部 passed
 
-- [ ] **Step 5: 手动冒烟 `imgsr serve`**
+- [x] **Step 5: 手动冒烟 `imgsr serve`**
 
 ```bash
 mkdir -p data && printf 'DATA_DIR=./data\nCOOKIE_SECURE=false\n' > .env.local-smoke
@@ -5843,7 +5843,7 @@ rm .env.local-smoke
 
 Expected: `{"ok":true,"free_bytes":…,"low_disk":false}`；`data/db/imgsr.sqlite3` 已创建。（`data/` 被 .gitignore 忽略。）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/imgsr/cli.py tests/test_maintenance.py tests/test_cli.py
@@ -5861,7 +5861,7 @@ git commit -m "feat: imgsr CLI and maintenance tests" -m "Co-Authored-By: Claude
 - Consumes: `create_app`、`hash_password`、`User`、`Settings`
 - Produces: `uv run python scripts/regress_real.py IMG [IMG...] [--truth-dir DIR] [--out DIR]`：在临时数据目录里起完整应用（真实中转站），逐张执行 上传 → 转写 → 确认原文（有真值文件用真值，否则用原始转写）→ 生成 → 审查，下载结果并输出 `report.json`。
 
-- [ ] **Step 1: 写 `scripts/regress_real.py`**
+- [x] **Step 1: 写 `scripts/regress_real.py`**
 
 ```python
 """Real-upstream regression: run the full pipeline on sample images through the actual relay.
@@ -5961,7 +5961,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 2: 写 `.env.example`**
+- [x] **Step 2: 写 `.env.example`**
 
 ```dotenv
 # 中转站（sub2api OpenAI 分组的用户 key）
@@ -5983,7 +5983,7 @@ TRUSTED_PROXIES=127.0.0.1,172.16.0.0/12
 HOST_PORT=18090
 ```
 
-- [ ] **Step 3: 写 `README.md`**
+- [x] **Step 3: 写 `README.md`**
 
 ````markdown
 # imgsr-studio
@@ -6025,7 +6025,7 @@ uv run python scripts/regress_real.py ../ai_video_gen/data/imgsr/图片/图片9.
 | `imgsr serve [--host] [--port]` | 启动服务 |
 ````
 
-- [ ] **Step 4: 全量验证**
+- [x] **Step 4: 全量验证**
 
 Run: `uv run pytest -q && uv run ruff check src tests scripts`
 Expected: 全部 passed；ruff 无报错
@@ -6038,7 +6038,7 @@ uv run python scripts/regress_real.py ../ai_video_gen/data/imgsr/图片/图片9.
 
 Expected: 输出一行 JSON：`round_status` 为 `succeeded`，`result` 约 1886×834，`diff_count` 为 0 或少量，并生成 `data/regress/<时间戳>/report.json`。把结果摘要记到本计划末尾“执行记录”。
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add scripts/regress_real.py README.md .env.example
@@ -6049,4 +6049,24 @@ git commit -m "docs: README, env example and real-upstream regression script" -m
 
 ## 执行记录
 
-（执行过程中在此追加：每个 Task 的完成日期、测试结果摘要、偏离计划之处及原因、真实上游冒烟结果。）
+执行方式：Native（executing-plans，单会话逐 Task），分支 `feat/backend`，2026-10-14。
+
+**Task 1–19 全部完成**（真实上游冒烟除外，见下），提交 `21e6ee4..787356b`；每个 Task 均先看测试失败再实现，`uv run pytest -q` 170/170、ruff 无告警。
+
+执行中的裁决：
+- T5：计划代码先把 `?` 转成 `？` 再去 `[?]`，导致不确定标记残留（测试抓到）→ 先去 `[?]/[？]` 再转标点。
+- T14：`maintenance.py` 的测试从 T18 提前到 T14，保证先失败后实现。
+- T14：Starlette TestClient 提示改用 `httpx2` → 加为开发依赖，测试输出无告警。
+- T18：服务冒烟改用后台进程 + `curl --retry`（环境禁止前台 sleep），检查项不变（health ok、CSRF 403、迁移成功）。
+- T19：**真实上游冒烟未执行**——会产生费用且本仓库 `.env` 尚无 `OPEN_API_KEY`，待用户确认后运行 `scripts/regress_real.py`（至少 图片1/2/9/14/17）。验收标准 1–3 仍待该次运行确认。
+
+**整分支审查**（独立 reviewer，Opus）：无 Critical；7 条 Important 已全部按 TDD 修复（`4b1b46a..b862179`），最终 `uv run pytest -q` 191/191：
+1. 上传时修改 Pillow 全局像素上限（测试依赖执行顺序、大图结果崩溃）→ 不再修改全局值。
+2. MPO 格式手机 JPEG 被拒 → 允许 MPO（只取第一帧）。
+3. 截图外框 >3% 时找不到切缝、贴边内容被忽略 → 检测深色外框，浅色边距保留。
+4. 结果落盘失败后任务永久卡在“生成中”且不退额 → 失败即标记失败并退额。
+5. 连点两次生成/重试 → 重复扣额、500 → 串行化“检查→扣额→插入”，异常退额。
+6. 执行建议时丢失原轮次提示词/策略 → 以原轮次设置为底，叠加建议参数与显式字段。
+7. 切块未考虑 3:1 补边、无块数上限 → 按补边面积判断、短边过长先切大板、单轮上限 16 块（超出则提前失败并退额）、仅在精修方案有效时才建议 `tile_refine`。
+
+暂缓的 Minor（15 条）与 reviewer 列出的不予判断事项的裁决，见本次会话最终汇报；部署相关裁决（`CF-Connecting-IP`、反代上传大小限制）需在计划 3 落实，前端需展示 `review.error` 与重试入口（计划 2）。
