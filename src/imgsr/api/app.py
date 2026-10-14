@@ -10,7 +10,7 @@ from collections.abc import AsyncIterator
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from imgsr.api import routes_auth
+from imgsr.api import routes_auth, routes_files, routes_tasks
 from imgsr.api.deps import AppContext
 from imgsr.auth import LoginLimiter
 from imgsr.clientip import parse_networks
@@ -28,7 +28,7 @@ from imgsr.storage import Storage
 
 log = logging.getLogger("imgsr")
 MUTATING = {"POST", "PUT", "PATCH", "DELETE"}
-ROUTERS = (routes_auth,)
+ROUTERS = (routes_auth, routes_tasks, routes_files)
 
 
 def create_app(
