@@ -68,7 +68,7 @@ frontend/
 **Interfaces:**
 - Produces: `Settings.static_dir: Path = Path("frontend/dist")`（环境变量 `STATIC_DIR`）；当 `static_dir/index.html` 存在时：`GET /assets/*` 返回打包资源；其余非 `/api/` 的 GET 若对应 `static_dir` 内真实文件则返回该文件，否则返回 `index.html`（`Cache-Control: no-cache`）；`/api/*` 未匹配仍为 404 JSON。
 
-- [ ] **Step 1: 写失败测试 `tests/api/test_spa.py`**
+- [x] **Step 1: 写失败测试 `tests/api/test_spa.py`**
 
 ```python
 import pytest
@@ -115,12 +115,12 @@ def test_no_static_dir_means_no_spa(make_api, tmp_path):
     assert api.client.get("/").status_code == 404
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `uv run pytest tests/api/test_spa.py -q`
 Expected: FAIL（`static_dir` 不是 Settings 字段时被忽略 / `/` 返回 404）
 
-- [ ] **Step 3: 修改 `src/imgsr/config.py`**
+- [x] **Step 3: 修改 `src/imgsr/config.py`**
 
 在 `min_free_bytes: int = 1_000_000_000` 下一行加入：
 
@@ -128,7 +128,7 @@ Expected: FAIL（`static_dir` 不是 Settings 字段时被忽略 / `/` 返回 40
     static_dir: Path = Path("frontend/dist")
 ```
 
-- [ ] **Step 4: 修改 `src/imgsr/api/app.py`**
+- [x] **Step 4: 修改 `src/imgsr/api/app.py`**
 
 在文件顶部 import 区加入：
 
@@ -173,12 +173,12 @@ def _mount_spa(app: FastAPI, static_dir) -> None:  # noqa: ANN001
         return FileResponse(index, headers={"Cache-Control": "no-cache"})
 ```
 
-- [ ] **Step 5: 运行，确认通过**
+- [x] **Step 5: 运行，确认通过**
 
 Run: `uv run pytest -q && uv run ruff check src tests`
 Expected: 全部 passed（原 191 + 新 5）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/imgsr/config.py src/imgsr/api/app.py tests/api/test_spa.py
@@ -195,7 +195,7 @@ git commit -m "feat: serve the built SPA from FastAPI" -m "Co-Authored-By: Claud
 **Interfaces:**
 - Produces: `formatTime(iso: string): string`（无时区按 UTC 解析，按北京时间显示 `YYYY/MM/DD HH:mm`）；`formatSize(w, h): string`（`1106×1428` 或 `—`）；CSS 组件类 `.btn-primary .btn-secondary .btn-danger .input`。
 
-- [ ] **Step 1: 写配置文件**
+- [x] **Step 1: 写配置文件**
 
 `frontend/package.json`:
 
@@ -275,7 +275,7 @@ export default defineConfig({
 </html>
 ```
 
-- [ ] **Step 2: 安装依赖**
+- [x] **Step 2: 安装依赖**
 
 ```bash
 cd frontend
@@ -285,7 +285,7 @@ npm install -D typescript@^5 vite@^7 @vitejs/plugin-react@^5 tailwindcss@^4 @tai
 
 Expected: 生成 `package-lock.json` 与 `node_modules/`（已被 .gitignore 忽略），无 ERESOLVE。
 
-- [ ] **Step 3: 写入口与样式**
+- [x] **Step 3: 写入口与样式**
 
 `frontend/src/vite-env.d.ts`:
 
@@ -370,7 +370,7 @@ afterEach(() => {
 });
 ```
 
-- [ ] **Step 4: 写失败测试 `frontend/src/lib/format.test.ts`**
+- [x] **Step 4: 写失败测试 `frontend/src/lib/format.test.ts`**
 
 ```ts
 import { formatSize, formatTime } from "./format";
@@ -390,12 +390,12 @@ test("formatSize", () => {
 });
 ```
 
-- [ ] **Step 5: 运行，确认失败**
+- [x] **Step 5: 运行，确认失败**
 
 Run: `cd frontend && npx vitest run src/lib/format.test.ts`
 Expected: FAIL（`Failed to resolve import "./format"`）
 
-- [ ] **Step 6: 实现 `frontend/src/lib/format.ts`**
+- [x] **Step 6: 实现 `frontend/src/lib/format.ts`**
 
 ```ts
 const ZONE = /(Z|[+-]\d\d:?\d\d)$/i;
@@ -419,12 +419,12 @@ export function formatSize(w: number | null | undefined, h: number | null | unde
 }
 ```
 
-- [ ] **Step 7: 运行，确认通过，并验证构建**
+- [x] **Step 7: 运行，确认通过，并验证构建**
 
 Run: `cd frontend && npx vitest run && npm run build`
 Expected: `3 passed`；`vite build` 输出 `dist/index.html` 与 `dist/assets/*`
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add frontend/package.json frontend/package-lock.json frontend/tsconfig.json frontend/vite.config.ts frontend/index.html frontend/src/main.tsx frontend/src/App.tsx frontend/src/index.css frontend/src/vite-env.d.ts frontend/src/test/setup.ts frontend/src/lib/format.ts frontend/src/lib/format.test.ts
@@ -444,7 +444,7 @@ git commit -m "feat: frontend scaffold with Vite, React, Tailwind and Vitest" -m
   - `class ApiError extends Error { status: number }`；`api<T>(path, { method?, json?, form? }) => Promise<T>`；`fileUrl(taskId, name, download = false)`
   - 测试工具：`mockFetch(routes) => calls[]`（键为 `"METHOD /path"`，省略方法即 GET；值为对象/Response/函数）、`json(status, body) => Response`
 
-- [ ] **Step 1: 写测试工具 `frontend/src/test/fetch.ts`**
+- [x] **Step 1: 写测试工具 `frontend/src/test/fetch.ts`**
 
 ```ts
 type Handler = (init: RequestInit | undefined, url: string) => unknown;
@@ -482,7 +482,7 @@ export function mockFetch(routes: Record<string, unknown>): FetchCall[] {
 }
 ```
 
-- [ ] **Step 2: 写失败测试 `frontend/src/api/client.test.ts`**
+- [x] **Step 2: 写失败测试 `frontend/src/api/client.test.ts`**
 
 ```ts
 import { json, mockFetch } from "../test/fetch";
@@ -550,12 +550,12 @@ test("fileUrl", () => {
 });
 ```
 
-- [ ] **Step 3: 运行，确认失败**
+- [x] **Step 3: 运行，确认失败**
 
 Run: `cd frontend && npx vitest run src/api/client.test.ts`
 Expected: FAIL（`Failed to resolve import "./client"`）
 
-- [ ] **Step 4: 实现 `frontend/src/api/types.ts`**
+- [x] **Step 4: 实现 `frontend/src/api/types.ts`**
 
 ```ts
 export type TaskStatus =
@@ -705,7 +705,7 @@ export interface RoundRequest {
 }
 ```
 
-- [ ] **Step 5: 实现 `frontend/src/api/client.ts`**
+- [x] **Step 5: 实现 `frontend/src/api/client.ts`**
 
 ```ts
 export class ApiError extends Error {
@@ -769,12 +769,12 @@ export function fileUrl(taskId: string, name: string, download = false): string 
 }
 ```
 
-- [ ] **Step 6: 运行，确认通过**
+- [x] **Step 6: 运行，确认通过**
 
 Run: `cd frontend && npx vitest run && npm run typecheck`
 Expected: 全部 passed；tsc 无错误
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/api/types.ts frontend/src/api/client.ts frontend/src/api/client.test.ts frontend/src/test/fetch.ts
@@ -796,7 +796,7 @@ git commit -m "feat: frontend API client and response types" -m "Co-Authored-By:
   - 所有任务类 mutation 成功后把返回的 Task 写入 `qk.task(id)` 缓存，并使 `qk.tasks`、`qk.me` 失效
   - `makeTask(over)`、`makeRound(over)` 测试夹具（默认 `id: "t1"`）
 
-- [ ] **Step 1: 写夹具 `frontend/src/test/fixtures.ts`**
+- [x] **Step 1: 写夹具 `frontend/src/test/fixtures.ts`**
 
 ```ts
 import type { Round, Task } from "../api/types";
@@ -846,7 +846,7 @@ export function makeTask(over: Partial<Task> = {}): Task {
 }
 ```
 
-- [ ] **Step 2: 写失败测试**
+- [x] **Step 2: 写失败测试**
 
 `frontend/src/lib/status.test.ts`:
 
@@ -910,12 +910,12 @@ test("creating a round posts the request body", async () => {
 });
 ```
 
-- [ ] **Step 3: 运行，确认失败**
+- [x] **Step 3: 运行，确认失败**
 
 Run: `cd frontend && npx vitest run src/lib/status.test.ts src/api/hooks.test.tsx`
 Expected: FAIL（无法解析 `./status`、`./hooks`）
 
-- [ ] **Step 4: 实现 `frontend/src/lib/status.ts`**
+- [x] **Step 4: 实现 `frontend/src/lib/status.ts`**
 
 ```ts
 import type { TaskStatus } from "../api/types";
@@ -945,7 +945,7 @@ export function pollInterval(task: { status: TaskStatus; busy?: boolean } | unde
 }
 ```
 
-- [ ] **Step 5: 实现 `frontend/src/api/hooks.ts`**
+- [x] **Step 5: 实现 `frontend/src/api/hooks.ts`**
 
 ```ts
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1158,12 +1158,12 @@ export function usePatchSettings() {
 }
 ```
 
-- [ ] **Step 6: 运行，确认通过**
+- [x] **Step 6: 运行，确认通过**
 
 Run: `cd frontend && npx vitest run && npm run typecheck`
 Expected: 全部 passed；tsc 无错误
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/lib/status.ts frontend/src/lib/status.test.ts frontend/src/api/hooks.ts frontend/src/api/hooks.test.tsx frontend/src/test/fixtures.ts
@@ -1189,7 +1189,7 @@ git commit -m "feat: status helpers and TanStack Query hooks" -m "Co-Authored-By
   - 页面标题约定（测试依赖）：工作台 `<h1>工作台</h1>`、历史 `<h1>历史</h1>`、管理 `<h1>管理</h1>`
   - 测试工具：`renderWithProviders(ui, { route, path })`（未匹配路由渲染 `data-testid="location"` 显示当前路径）、`renderApp(route)`
 
-- [ ] **Step 1: 写测试工具 `frontend/src/test/utils.tsx`**
+- [x] **Step 1: 写测试工具 `frontend/src/test/utils.tsx`**
 
 ```tsx
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -1236,7 +1236,7 @@ export function renderApp(route = "/") {
 }
 ```
 
-- [ ] **Step 2: 写失败测试**
+- [x] **Step 2: 写失败测试**
 
 `frontend/src/components/ErrorNote.test.tsx`:
 
@@ -1331,12 +1331,12 @@ test("unknown routes show the not-found page", async () => {
 });
 ```
 
-- [ ] **Step 3: 运行，确认失败**
+- [x] **Step 3: 运行，确认失败**
 
 Run: `cd frontend && npx vitest run src/App.test.tsx src/components/ErrorNote.test.tsx`
 Expected: FAIL（无法解析 `./ErrorNote` 等 / 占位 App 不含登录页）
 
-- [ ] **Step 4: 实现通用组件**
+- [x] **Step 4: 实现通用组件**
 
 `frontend/src/components/ErrorNote.tsx`:
 
@@ -1450,7 +1450,7 @@ export function AppShell() {
 }
 ```
 
-- [ ] **Step 5: 实现页面与路由**
+- [x] **Step 5: 实现页面与路由**
 
 `frontend/src/pages/LoginPage.tsx`:
 
@@ -1604,12 +1604,12 @@ export default function App() {
 }
 ```
 
-- [ ] **Step 6: 运行，确认通过**
+- [x] **Step 6: 运行，确认通过**
 
 Run: `cd frontend && npx vitest run && npm run typecheck`
 Expected: 全部 passed
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/App.tsx frontend/src/App.test.tsx frontend/src/test/utils.tsx frontend/src/components/ErrorNote.tsx frontend/src/components/ErrorNote.test.tsx frontend/src/components/Working.tsx frontend/src/components/RequireAuth.tsx frontend/src/components/AppShell.tsx frontend/src/pages/LoginPage.tsx frontend/src/pages/NotFound.tsx frontend/src/pages/WorkbenchPage.tsx frontend/src/pages/TaskPage.tsx frontend/src/pages/HistoryPage.tsx frontend/src/pages/GuestPage.tsx frontend/src/pages/AdminPage.tsx
@@ -1627,7 +1627,7 @@ git commit -m "feat: login, auth guard, routes and app shell" -m "Co-Authored-By
 **Interfaces:**
 - Produces: `StatusBadge({ status })`；`UploadDropzone({ onFile, disabled?, hint? })`（点击选择、拖放、全局粘贴；隐藏 input `data-testid="file-input"`；禁用时忽略所有来源）；工作台：上传成功跳转 `/tasks/:id`，显示最近 6 个任务。
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 `frontend/src/components/UploadDropzone.test.tsx`:
 
@@ -1723,12 +1723,12 @@ test("recent tasks link to their pages", async () => {
 });
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `cd frontend && npx vitest run src/components/UploadDropzone.test.tsx src/pages/WorkbenchPage.test.tsx`
 Expected: FAIL（无法解析 `./UploadDropzone`；工作台占位无上传区）
 
-- [ ] **Step 3: 实现组件**
+- [x] **Step 3: 实现组件**
 
 `frontend/src/components/StatusBadge.tsx`:
 
@@ -1883,12 +1883,12 @@ export default function WorkbenchPage() {
 }
 ```
 
-- [ ] **Step 4: 运行，确认通过**
+- [x] **Step 4: 运行，确认通过**
 
 Run: `cd frontend && npx vitest run && npm run typecheck`
 Expected: 全部 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/StatusBadge.tsx frontend/src/components/UploadDropzone.tsx frontend/src/components/UploadDropzone.test.tsx frontend/src/pages/WorkbenchPage.tsx frontend/src/pages/WorkbenchPage.test.tsx
@@ -1907,7 +1907,7 @@ git commit -m "feat: upload dropzone and workbench page" -m "Co-Authored-By: Cla
   - `CompareViewer({ left, right })`，`left/right: { src, label }`：“滑块”模式（右图为底，左图按滑块比例裁切叠加，`aria-label="对比位置"` 的 range）与“并排（同步缩放）”模式（两个 `TransformWrapper` 互相同步平移缩放）
   - `TranscriptPanel({ task, onConfirm(text), onRetry(), pending? })`：左原图可缩放，右原文可编辑（`aria-label="原文"`，A-/A+ 调字号 12–28），醒目提示；`transcribe_failed` 时显示错误与“重试转写”；`pending` 时禁用按钮
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 `frontend/src/components/CompareViewer.test.tsx`:
 
@@ -1981,12 +1981,12 @@ test("pending disables confirmation", () => {
 });
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `cd frontend && npx vitest run src/components/CompareViewer.test.tsx src/components/TranscriptPanel.test.tsx`
 Expected: FAIL（无法解析组件）
 
-- [ ] **Step 3: 实现 `frontend/src/components/CompareViewer.tsx`**
+- [x] **Step 3: 实现 `frontend/src/components/CompareViewer.tsx`**
 
 ```tsx
 import { useRef, useState } from "react";
@@ -2078,7 +2078,7 @@ function SideBySide({ left, right }: { left: CompareSide; right: CompareSide }) 
 }
 ```
 
-- [ ] **Step 4: 实现 `frontend/src/components/TranscriptPanel.tsx`**
+- [x] **Step 4: 实现 `frontend/src/components/TranscriptPanel.tsx`**
 
 ```tsx
 import { useState } from "react";
@@ -2149,12 +2149,12 @@ export function TranscriptPanel({
 }
 ```
 
-- [ ] **Step 5: 运行，确认通过**
+- [x] **Step 5: 运行，确认通过**
 
 Run: `cd frontend && npx vitest run && npm run typecheck`
 Expected: 全部 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/components/CompareViewer.tsx frontend/src/components/CompareViewer.test.tsx frontend/src/components/TranscriptPanel.tsx frontend/src/components/TranscriptPanel.test.tsx
@@ -2174,7 +2174,7 @@ git commit -m "feat: compare viewer and transcript confirmation panel" -m "Co-Au
   - `ReviewPanel({ round, onExecute(index), onAccept(), onRetryReview(), pending? })`：`review` 为空 → “正在审查结果文字…”；`review.error` → 错误 + “重试审查”；差异列表“应为 X → 实为 Y”+句子；建议卡片：`accept` → “设为最终版”按钮，`retry_with_hint`/`tile_refine` → “执行”按钮，`manual_check` 只有说明；`pending` 时按钮禁用
   - `RoundForm({ hasText, onSubmit(RoundRequest), pending?, submitLabel? = "开始生成" })`：提交 `{ prompt: 文本或 null, strategy, preupscale: 1|2, use_text_hint }`；无原文时“带原文提示”不可勾选
 
-- [ ] **Step 1: 写失败测试 `frontend/src/components/rounds.test.tsx`**
+- [x] **Step 1: 写失败测试 `frontend/src/components/rounds.test.tsx`**
 
 ```tsx
 import { render, screen } from "@testing-library/react";
@@ -2272,12 +2272,12 @@ test("a pending round form cannot be submitted twice", () => {
 });
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `cd frontend && npx vitest run src/components/rounds.test.tsx`
 Expected: FAIL（无法解析组件）
 
-- [ ] **Step 3: 实现 `frontend/src/components/RoundStrip.tsx`**
+- [x] **Step 3: 实现 `frontend/src/components/RoundStrip.tsx`**
 
 ```tsx
 import { fileUrl } from "../api/client";
@@ -2336,7 +2336,7 @@ export function RoundStrip({
 }
 ```
 
-- [ ] **Step 4: 实现 `frontend/src/components/ReviewPanel.tsx`**
+- [x] **Step 4: 实现 `frontend/src/components/ReviewPanel.tsx`**
 
 ```tsx
 import type { Round, SuggestionAction } from "../api/types";
@@ -2419,7 +2419,7 @@ export function ReviewPanel({
 }
 ```
 
-- [ ] **Step 5: 实现 `frontend/src/components/RoundForm.tsx`**
+- [x] **Step 5: 实现 `frontend/src/components/RoundForm.tsx`**
 
 ```tsx
 import { useState } from "react";
@@ -2498,12 +2498,12 @@ export function RoundForm({
 }
 ```
 
-- [ ] **Step 6: 运行，确认通过**
+- [x] **Step 6: 运行，确认通过**
 
 Run: `cd frontend && npx vitest run && npm run typecheck`
 Expected: 全部 passed
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/components/RoundStrip.tsx frontend/src/components/ReviewPanel.tsx frontend/src/components/RoundForm.tsx frontend/src/components/rounds.test.tsx
@@ -2528,7 +2528,7 @@ git commit -m "feat: round strip, review panel and round form" -m "Co-Authored-B
   - 有轮次：`RoundStrip`（默认选最新）+ 所选轮次详情：`queued/running` → `Working` “正在生成（单轮约 1–3 分钟）…”；`failed` → 错误 + “重试”；`succeeded` → `CompareViewer`（原图 vs 第 N 轮）、切块说明（`strategy.plan.notes`）、链接“下载”（`download-N?download=1`）与“原生分辨率”（`result-N?download=1`）、`ReviewPanel`；任务未处理中时显示折叠的“再来一轮”表单（`submitLabel="生成新一轮"`）
   - 任何 mutation 错误用 `ErrorNote` 显示
 
-- [ ] **Step 1: 写失败测试 `frontend/src/pages/TaskPage.test.tsx`**
+- [x] **Step 1: 写失败测试 `frontend/src/pages/TaskPage.test.tsx`**
 
 ```tsx
 import { screen } from "@testing-library/react";
@@ -2648,12 +2648,12 @@ test("a missing task shows the server message", async () => {
 });
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `cd frontend && npx vitest run src/pages/TaskPage.test.tsx`
 Expected: FAIL（占位页只显示“任务”）
 
-- [ ] **Step 3: 实现 `frontend/src/pages/TaskPage.tsx`**
+- [x] **Step 3: 实现 `frontend/src/pages/TaskPage.tsx`**
 
 ```tsx
 import { useState } from "react";
@@ -2844,12 +2844,12 @@ function RoundDetail({
 }
 ```
 
-- [ ] **Step 4: 运行，确认通过**
+- [x] **Step 4: 运行，确认通过**
 
 Run: `cd frontend && npx vitest run && npm run typecheck`
 Expected: 全部 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/pages/TaskPage.tsx frontend/src/pages/TaskPage.test.tsx
@@ -2869,7 +2869,7 @@ git commit -m "feat: task page with transcript, rounds, review and downloads" -m
   - 历史页：`<h1>历史</h1>`；每行链接 `任务 {id8}`、尺寸/轮数/时间/是否定稿、状态徽标、两步删除（“删除”→“确认删除”，`aria-label` 含任务号）；有下一页时“加载更多”（带 `cursor`）
   - 游客页：`<h1>截图文字清晰化 · 临时使用</h1>`；“今日剩余 N 次”；上传区（剩余 0 时禁用）+ 折叠的自定义提示词；上传成功写入 `?task=<id>`；按 `?task=` 轮询游客任务：`generating` → Working；`round_failed` → 错误 + “重新上传”；`done` → 对比 + “下载”链接 + “再处理一张”
 
-- [ ] **Step 1: 写失败测试**
+- [x] **Step 1: 写失败测试**
 
 `frontend/src/pages/HistoryPage.test.tsx`:
 
@@ -2986,12 +2986,12 @@ test("a failed guest round explains and offers a fresh upload", async () => {
 });
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `cd frontend && npx vitest run src/pages/HistoryPage.test.tsx src/pages/GuestPage.test.tsx`
 Expected: FAIL（占位页）
 
-- [ ] **Step 3: 实现 `frontend/src/pages/HistoryPage.tsx`**
+- [x] **Step 3: 实现 `frontend/src/pages/HistoryPage.tsx`**
 
 ```tsx
 import { useState } from "react";
@@ -3062,7 +3062,7 @@ export default function HistoryPage() {
 }
 ```
 
-- [ ] **Step 4: 实现 `frontend/src/pages/GuestPage.tsx`**
+- [x] **Step 4: 实现 `frontend/src/pages/GuestPage.tsx`**
 
 ```tsx
 import { useState } from "react";
@@ -3153,12 +3153,12 @@ function GuestResult({ task, onReset }: { task: GuestTask; onReset: () => void }
 }
 ```
 
-- [ ] **Step 5: 运行，确认通过**
+- [x] **Step 5: 运行，确认通过**
 
 Run: `cd frontend && npx vitest run && npm run typecheck`
 Expected: 全部 passed（含 Task 5 的 App 测试：历史页仍有 `<h1>历史</h1>`）
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/pages/HistoryPage.tsx frontend/src/pages/HistoryPage.test.tsx frontend/src/pages/GuestPage.tsx frontend/src/pages/GuestPage.test.tsx
@@ -3176,7 +3176,7 @@ git commit -m "feat: history page and guest page" -m "Co-Authored-By: Claude Opu
 **Interfaces:**
 - Produces：`<h1>管理</h1>`；用户区：新建表单（`aria-label` 新用户名/新用户密码/新用户角色/新用户额度，额度留空 → `null`）、用户表（角色、`今日/额度` 可编辑并在失焦时保存、禁用/启用、重置密码内联输入“{用户名} 的新密码”+“保存密码”）；设置区：每个 `effective` 键一个输入框（中文标签），“保存设置”只提交改动项，数字类转成 number；错误统一 `ErrorNote`
 
-- [ ] **Step 1: 写失败测试 `frontend/src/pages/AdminPage.test.tsx`**
+- [x] **Step 1: 写失败测试 `frontend/src/pages/AdminPage.test.tsx`**
 
 ```tsx
 import { fireEvent, screen } from "@testing-library/react";
@@ -3252,12 +3252,12 @@ test("setting validation errors are shown", async () => {
 });
 ```
 
-- [ ] **Step 2: 运行，确认失败**
+- [x] **Step 2: 运行，确认失败**
 
 Run: `cd frontend && npx vitest run src/pages/AdminPage.test.tsx`
 Expected: FAIL（占位页）
 
-- [ ] **Step 3: 实现 `frontend/src/pages/AdminPage.tsx`**
+- [x] **Step 3: 实现 `frontend/src/pages/AdminPage.tsx`**
 
 ```tsx
 import { useState } from "react";
@@ -3483,12 +3483,12 @@ function SettingsForm({
 }
 ```
 
-- [ ] **Step 4: 运行，确认通过**
+- [x] **Step 4: 运行，确认通过**
 
 Run: `cd frontend && npx vitest run && npm run typecheck`
 Expected: 全部 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/pages/AdminPage.tsx frontend/src/pages/AdminPage.test.tsx
@@ -3507,7 +3507,7 @@ git commit -m "feat: admin page for users and settings" -m "Co-Authored-By: Clau
 - Consumes: 后端 `create_app`（Task 1 的 SPA 托管）、`tests/fakes.py` 的 `FakeImages/FakeChat`、构建产物 `frontend/dist`
 - Produces: `uv run python scripts/e2e_server.py --port 18091`（临时数据目录、假上游：转写与审查都返回“示例原文。”、预置管理员 `admin/password123`）；`npm run e2e` 跑两条冒烟：登录用户完整流程、游客流程（含 390px 手机视口无横向滚动）。
 
-- [ ] **Step 1: 写 `scripts/e2e_server.py`**
+- [x] **Step 1: 写 `scripts/e2e_server.py`**
 
 ```python
 """Run the app with fake relay clients for browser E2E tests (no network, no cost).
@@ -3559,7 +3559,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 2: 写 `frontend/playwright.config.ts`**
+- [x] **Step 2: 写 `frontend/playwright.config.ts`**
 
 ```ts
 import { defineConfig, devices } from "@playwright/test";
@@ -3579,7 +3579,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 3: 生成测试图片并写 `frontend/e2e/smoke.spec.ts`**
+- [x] **Step 3: 生成测试图片并写 `frontend/e2e/smoke.spec.ts`**
 
 ```bash
 mkdir -p frontend/e2e/fixtures
@@ -3618,7 +3618,7 @@ test("guest flow on a phone-sized screen", async ({ page }) => {
 });
 ```
 
-- [ ] **Step 4: 构建并运行 E2E**
+- [x] **Step 4: 构建并运行 E2E**
 
 ```bash
 cd frontend
@@ -3629,7 +3629,7 @@ npm run e2e
 
 Expected: `2 passed`。若首条用例在“设为最终版”超时，先确认后端日志里 review 任务完成（假上游转写与审查返回同一段文字 → 差异为 0 → 建议为 accept）。
 
-- [ ] **Step 5: 更新 `README.md`**
+- [x] **Step 5: 更新 `README.md`**
 
 在“## 测试”一节之前插入：
 
@@ -3646,12 +3646,12 @@ npm run e2e        # Playwright 冒烟：自动启动 scripts/e2e_server.py（�
 ```
 ````
 
-- [ ] **Step 6: 全量验证**
+- [x] **Step 6: 全量验证**
 
 Run: `uv run pytest -q && uv run ruff check src tests scripts && cd frontend && npx vitest run && npm run typecheck && npm run build`
 Expected: 全部通过
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add scripts/e2e_server.py frontend/playwright.config.ts frontend/e2e/smoke.spec.ts frontend/e2e/fixtures/sample.png README.md
@@ -3662,4 +3662,28 @@ git commit -m "test: browser E2E against a fake relay; document the frontend" -m
 
 ## 执行记录
 
-（执行过程中在此追加：每个 Task 的完成日期、测试结果摘要、偏离计划之处及原因。）
+2026-10-14，分支 `feat/frontend`，Native 方式（本会话逐 Task 执行 + 结束时一次 Opus 整分支审查）。
+
+**Task 提交**：T1 7ae790c · T2 d35d322 · T3 8723907 · T4 6b7aab5 · T5 df08cc6 · T6 2819436 · T7 482be3b · T8 1e076e1 · T9 4893fad · T10 c96b3c6 · T11 437ef3e · T12 5c92666；审查修复 59b219e。
+
+**最终测试**：前端 vitest 85/85、typecheck 无错误、Playwright E2E 2/2（重新 build 后）；后端 pytest 198/198。
+
+**偏离计划的裁决**：
+- T1：5 条 SPA 测试中 3 条（未知 /api 404、路径穿越、静态目录缺失）在实现前就通过——属于防回归测试；2 条托管测试按预期先红后绿。
+- T2：计划固定 `vitest@^3`，其依赖 tinypool / @vitest/mocker 带 2 个 critical + 1 个 moderate 的 npm 漏洞告警，改用 `vitest@^4`（4.1.11），0 漏洞。
+- T11：额度输入失焦后 PATCH 在下一个微任务才发出，测试断言改用 `waitFor`（仅测试代码）。
+- T12：E2E 首次运行即通过（T12 无新增生产代码，行为已由 T1–T11 单测驱动），无 RED 阶段。
+- 视觉检查：Playwright MCP 需要 9222 端口的 CDP Chrome，未运行，改用项目自带 Playwright Chromium 截图；登录、工作台、原文确认、审查结果、并排对比、游客页 390px 均正常，无横向滚动，并排模式滚轮缩放同步。
+
+**整分支审查（Opus）**：结论“修复后可合并”。1 个 Critical + 8 个 Important 在一轮修复中处理，每项先写失败测试再修（`frontend/src/pages/regressions.test.tsx`）：
+- 任一成功轮次都可“设为最终版”（此前只有差异为 0 的轮次能定稿）；审查建议里的接受按钮改名为“采用本轮并定稿”，避免同名按钮。
+- 没有确认原文、未经比对的审查不再显示“一致 / 差异 0”，改为“未比对”。
+- 执行建议、重试后自动切到新一轮；操作被拒（如 409）时刷新任务，让轮询恢复。
+- 游客失败退额后刷新额度；游客任务不存在时提供“重新上传”。
+- “再来一轮”表单在请求进行中保持挂载，被拒后不丢输入。
+- 对比查看器可选“对比基准”（原图或其他轮次）。
+- 差异条目可点击（复制所在句子并提示到对比查看器中放大查找），`manual_check` 涉及的差异标“需人工核对”。
+
+**审查中未判断事项的裁决**：CSP / 安全头放到部署计划；手机上缩放与页面滚动的冲突、iPhone Safari 下微秒时间戳的显示，部署后真机检查；手机加载原尺寸图、每条建议一个“执行”、“同步缩放”无说明、同 `created_at` 分页、React 19、无改角色界面（角色在 `imgsr create-user --admin` 时确定）——均维持现状。
+
+**暂缓的 Minor**（留待后续）：轮询出错时整页被替换；401 后仍轮询；旧的操作错误残留；“去登录”不带 `from`；已完成任务默认不选中定稿轮；删除确认状态不重置；“修改原文”没有取消；RoundForm 不预填；默认提示词不可见；执行建议时不能叠加高级设置；2xx 非 JSON / `text()` 异常未处理；413 提示不友好；路径段未 `encodeURIComponent`；SPA 细节（未知 /api 的 POST/HEAD 返回 405、favicon.ico 返回 index、assets 与 index.html 缓存头、相对 `static_dir` 日志）；无障碍（dropzone 空格键、tablist 角色）；admin（密码 minLength、额度回车保存）；测试层面（双击测试只测 prop、e2e 不先 build、游客刷新未测、e2e_server 临时目录泄漏）；登录用户头部“今日 x/y”在退额后不刷新。
