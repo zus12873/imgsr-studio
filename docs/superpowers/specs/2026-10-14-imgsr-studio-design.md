@@ -106,10 +106,10 @@ FastAPI 进程（同时托管 SPA 静态文件）
 |---|---|---|
 | `users` | id, username(unique), password_hash(argon2id), role(admin/user), daily_quota, disabled, created_at | 无注册入口 |
 | `sessions` | id, token_hash, user_id, expires_at, last_seen_at | Cookie 会话，库里只存 token 哈希 |
-| `tasks` | id(uuid), owner_user_id(nullable), guest_token_hash(nullable), client_ip, source_path, source_w, source_h, status, transcript_raw, confirmed_text, transcript_model, final_round_id, created_at, expires_at | 一张原图一个任务 |
-| `rounds` | id, task_id, seq, image_model, prompt, strategy(JSON), use_text_hint, status, result_path, result_w, result_h, download_w, download_h, elapsed_s, error, review(JSON), created_at | 每次生成一轮 |
+| `tasks` | id(uuid hex), owner_user_id(nullable), guest_token_hash(nullable), client_ip, source_w, source_h, status, transcript_raw, confirmed_text, transcript_model, tile_transcripts(JSON，切块转写缓存), final_round_id, error, created_at, expires_at | 一张原图一个任务；文件路径由 Storage 按 id 推导，不入库 |
+| `rounds` | id, task_id, seq, image_model, prompt, strategy(JSON), use_text_hint, status, result_w, result_h, download_w, download_h, elapsed_s, error, review(JSON), charge(JSON，扣额记录，用于失败退额), created_at | 每次生成一轮 |
 | `jobs` | id, kind(transcribe/generate/review), task_id, round_id, status(queued/running/succeeded/failed), attempts, error, created_at, started_at, finished_at | 执行器队列 |
-| `usage_daily` | subject(`user:<id>`/`ip:<addr>`/`guest:global`), date, image_calls, llm_calls | 限额按 `image_calls`（=轮数）计；`llm_calls` 仅统计 |
+| `usage_daily` | subject(`user:<id>`/`ip:<addr>`/`guest:global`), day(UTC+8 日期), image_calls, llm_calls | 限额按 `image_calls`（=轮数）计；`llm_calls` 仅统计 |
 | `settings` | key, value(JSON), updated_at | 管理页设置，覆盖环境变量默认值 |
 
 `rounds.strategy` 示例：
@@ -212,7 +212,7 @@ reviewed →(设为最终版)→ done            generating/reviewing → round_
 | `accept` | `diffs` 为空 | 设为最终版 |
 | `retry_with_hint` | 有差异且本轮未用原文提示 | `use_text_hint=true`，其余沿用 |
 | `tile_refine` | 有差异、已用原文提示、未 `preupscale` | `strategy=tiles`、`preupscale=2`、`use_text_hint=true` |
-| `manual_check` | 某处差异（按 `expected` 匹配）在连续 ≥ 2 轮出现；或无原文可比对 | 不执行生成；在 UI 中高亮这些句子，提示人工放大核对或接受 |
+| `manual_check` | 某处差异（按 `expected` 匹配，插入类按 `found` 匹配）在连续 ≥ 2 轮出现；或无原文可比对；或以上动作都不适用（已带提示且已预放大） | 不执行生成；在 UI 中高亮这些句子，提示人工放大核对或接受 |
 
 同一轮可同时给出多条建议；用户也可以忽略建议直接改提示词或原文重跑。
 
@@ -243,7 +243,7 @@ React + Vite，中文界面，桌面优先、手机可用。
 - 密码 argon2id；会话 Cookie `HttpOnly; Secure; SameSite=Lax`，14 天滑动过期。
 - 首个管理员：`uv run imgsr create-user --admin <name>`（交互输入密码）。
 - 登录失败：同 IP 15 分钟 10 次后临时锁定。
-- CSRF：写操作要求 JSON `Content-Type` 或自定义请求头 + `SameSite`。
+- CSRF：所有 `/api/` 写操作必须带请求头 `X-Requested-With: imgsr`（否则 403）+ `SameSite=Lax`。
 - 限额（管理页可调）：游客每 IP 每日 3 次、全站游客每日 100 次；登录用户默认每日 50 次（可逐人设置）。一轮计 1 次（不论切几块）；**排队时扣减，因上游原因整体失败时退回**。
 - 真实 IP：仅信任来自可信代理的头。`CLIENT_IP_HEADER`（`X-Forwarded-For` 或 `CF-Connecting-IP`）与 `TRUSTED_PROXIES` 可配；部署时从外部检查响应头（是否有 `cf-ray`）确定。
 - 上传：仅 PNG/JPG/WebP，≤ 15 MB，≤ 25 MP；设置 `Image.MAX_IMAGE_PIXELS`；统一重编码为 PNG、去 EXIF；文件名用 UUID；文件接口校验归属，不开放目录。
