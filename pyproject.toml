@@ -44,6 +44,7 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.File", "f
 
 [dependency-groups]
 dev = [
+    "httpx2>=2.13.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "ruff>=0.17.0",
