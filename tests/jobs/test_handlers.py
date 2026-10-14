@@ -215,8 +215,11 @@ async def test_generate_for_deleted_task_leaves_no_files(sf, services, make_user
     svc, _ = services(images=images)
     tid, _, job = seed(sf, svc.storage, Image.new("RGB", (300, 200)), owner=uid)
     run = asyncio.create_task(Pipeline(svc).generate(job))
-    while not images.calls:
+    for _ in range(500):
+        if images.calls:
+            break
         await asyncio.sleep(0.01)
+    assert images.calls, "generate never reached the image call"
     with sf() as db:
         db.delete(db.get(Task, tid))
         db.commit()

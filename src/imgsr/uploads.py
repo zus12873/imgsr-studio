@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-import warnings
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
@@ -20,19 +19,19 @@ def normalize_upload(data: bytes, *, max_bytes: int, max_pixels: int) -> Image.I
     if len(data) > max_bytes:
         raise UploadRejected(f"文件超过 {max_bytes // 1_000_000} MB 上限")
     too_big = f"图片像素超过 {max_pixels // 1_000_000} MP 上限"
-    Image.MAX_IMAGE_PIXELS = max_pixels
+    # Image.open only parses the header, so the explicit size check below rejects
+    # decompression bombs before any pixel is decoded. Pillow's global limit is left alone:
+    # changing it here would affect every other image operation in the process.
     try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", Image.DecompressionBombWarning)
-            img = Image.open(io.BytesIO(data))
-            if img.format not in ALLOWED_FORMATS:
-                raise UploadRejected("只支持 PNG、JPG、WebP 图片")
-            if img.width * img.height > max_pixels:
-                raise UploadRejected(too_big)
-            img.load()
+        img = Image.open(io.BytesIO(data))
+        if img.format not in ALLOWED_FORMATS:
+            raise UploadRejected("只支持 PNG、JPG、WebP 图片")
+        if img.width * img.height > max_pixels:
+            raise UploadRejected(too_big)
+        img.load()
     except UploadRejected:
         raise
-    except (Image.DecompressionBombError, Image.DecompressionBombWarning) as exc:
+    except Image.DecompressionBombError as exc:
         raise UploadRejected(too_big) from exc
     except (UnidentifiedImageError, OSError, SyntaxError, ValueError) as exc:
         raise UploadRejected("无法识别的图片文件") from exc

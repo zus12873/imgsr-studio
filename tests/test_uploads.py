@@ -71,3 +71,12 @@ def test_too_many_pixels():
     data = encode(Image.new("RGB", (200, 100)), "PNG")
     with pytest.raises(UploadRejected, match="像素"):
         normalize_upload(data, max_bytes=15_000_000, max_pixels=10_000)
+
+
+def test_rejection_does_not_shrink_global_pillow_limit():
+    before = Image.MAX_IMAGE_PIXELS
+    with pytest.raises(UploadRejected):
+        normalize_upload(encode(Image.new("RGB", (200, 100)), "PNG"), max_bytes=15_000_000,
+                         max_pixels=10_000)
+    assert Image.MAX_IMAGE_PIXELS == before
+    Image.open(io.BytesIO(encode(Image.new("RGB", (300, 300)), "PNG"))).load()
