@@ -189,3 +189,31 @@ def test_double_retry_queues_one_job(api, monkeypatch):
     assert codes == [200, 409]
     assert api.client.get("/api/me").json()["used_today"] == 1
     wait_task(api.client, tid, lambda b: b["status"] == "reviewed")
+
+
+def _first_round_with_suggestion(api, **first_round):
+    tid = ready_task(api, "晚上还会发出亮光呢！")
+    api.chat.reply = lambda i, size: "晚上还会发出光光呢！"
+    api.client.post(f"/api/tasks/{tid}/rounds", json={"use_text_hint": False, **first_round})
+    first = wait_task(api.client, tid, lambda b: b["status"] == "reviewed")["rounds"][0]
+    assert first["review"]["suggestions"][0]["action"] == "retry_with_hint"
+    return tid, first
+
+
+def test_suggestion_keeps_source_round_settings(api):
+    tid, first = _first_round_with_suggestion(api, prompt="自定义提示词", strategy="whole")
+    api.client.post(f"/api/tasks/{tid}/rounds",
+                    json={"suggestion": {"round_id": first["id"], "index": 0}})
+    body = wait_task(api.client, tid, lambda b: b["status"] == "reviewed" and len(b["rounds"]) == 2)
+    second = body["rounds"][1]
+    assert second["prompt"] == "自定义提示词"
+    assert second["strategy"]["mode"] == "whole"
+    assert second["use_text_hint"] is True
+
+
+def test_explicit_fields_override_suggestion_base(api):
+    tid, first = _first_round_with_suggestion(api, prompt="自定义提示词")
+    api.client.post(f"/api/tasks/{tid}/rounds",
+                    json={"suggestion": {"round_id": first["id"], "index": 0}, "prompt": "新的提示词"})
+    body = wait_task(api.client, tid, lambda b: b["status"] == "reviewed" and len(b["rounds"]) == 2)
+    assert body["rounds"][1]["prompt"] == "新的提示词"

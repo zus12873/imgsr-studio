@@ -56,6 +56,8 @@ def charge_user(db: Session, user: User) -> dict:
 
 
 def _suggestion_params(db: Session, task: Task, round_id: int, index: int) -> dict:
+    """Settings for executing a suggestion: the source round's settings, overlaid with the
+    suggestion's params ("其余沿用", spec §6.5)."""
     src = db.get(Round, round_id)
     suggestions = (src.review or {}).get("suggestions", []) if src and src.task_id == task.id else []
     if not 0 <= index < len(suggestions):
@@ -63,7 +65,9 @@ def _suggestion_params(db: Session, task: Task, round_id: int, index: int) -> di
     suggestion = suggestions[index]
     if suggestion.get("action") not in EXECUTABLE:
         raise HTTPException(400, "该建议不需要生成新一轮")
-    return dict(suggestion.get("params") or {})
+    base = {"prompt": src.prompt, "strategy": src.strategy.get("mode", "auto"),
+            "preupscale": src.strategy.get("preupscale", 1), "use_text_hint": src.use_text_hint}
+    return {**base, **(suggestion.get("params") or {})}
 
 
 @router.post("", status_code=201)
@@ -155,7 +159,9 @@ def create_round(task_id: str, body: RoundIn, user: User = Depends(current_user)
         params = {"prompt": body.prompt, "strategy": body.strategy, "preupscale": body.preupscale,
                   "use_text_hint": body.use_text_hint}
         if body.suggestion is not None:
-            params.update(_suggestion_params(db, task, body.suggestion.round_id, body.suggestion.index))
+            explicit = {k: params[k] for k in body.model_fields_set if k in params}
+            params = {**_suggestion_params(db, task, body.suggestion.round_id, body.suggestion.index),
+                      **explicit}
         has_text = bool((task.confirmed_text or "").strip())
         charge = charge_user(db, user)
         try:
