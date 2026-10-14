@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import difflib
 import re
+import unicodedata
 from dataclasses import asdict, dataclass
 
 _PUNCT = str.maketrans(
@@ -29,8 +30,17 @@ class Diff:
         return asdict(self)
 
 
+# Emoji, pictographs and decorative symbols (👉 ☆ △) are transcribed inconsistently.
+_SYMBOL_CATEGORIES = {"So", "Sk", "Cf"}
+
+
+def _is_symbol(ch: str) -> bool:
+    return unicodedata.category(ch) in _SYMBOL_CATEGORIES or "\ufe00" <= ch <= "\ufe0f"
+
+
 def normalize(text: str) -> str:
-    return _DROP.sub("", _UNCERTAIN.sub("", text).translate(_PUNCT))
+    text = _DROP.sub("", _UNCERTAIN.sub("", text).translate(_PUNCT))
+    return "".join(ch for ch in text if not _is_symbol(ch))
 
 
 def _sentence_at(text: str, index: int) -> str:

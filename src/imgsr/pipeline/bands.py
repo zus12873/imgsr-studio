@@ -31,20 +31,33 @@ FRAME_MAX_LEVEL = 200  # uniform edge strips darker than this are frames (border
 def _frame_extent(lines: np.ndarray, max_std: float) -> tuple[int, int]:
     """Leading/trailing positions along the lines that form a dark outer frame.
 
-    A frame position is uniform across *all* lines and darker than FRAME_MAX_LEVEL (a
-    screenshot border, phone bezels). Frames are excluded when judging blankness so a thick
-    border cannot make every line look busy. Light margins are kept: they match the page
-    background, and keeping them preserves contrast against solid content. Content near the
-    edge (a right-aligned badge) is never trimmed because it is not uniform across lines.
+    From each edge, walk the run of positions that are uniform across *all* lines (any
+    colour) and trim up to the last dark one (mean < FRAME_MAX_LEVEL) in that run. This
+    removes a screenshot border or phone bezels even when a light ring sits outside them
+    (transparent PNG edges become white after upload flattening), while light margins
+    inside the frame are kept: they match the page background and preserve contrast
+    against solid content. Content near the edge (a right-aligned badge) is never
+    trimmed because it is not uniform across lines.
     """
-    uniform = (lines.std(axis=0) < max_std) & (lines.mean(axis=0) < FRAME_MAX_LEVEL)
+    # Judge each position over the lines minus a thin band at both ends, so the light ring on
+    # the perpendicular edges does not make a dark frame row look non-uniform.
+    k = max(2, lines.shape[0] // 100)
+    core = lines[k : lines.shape[0] - k] if lines.shape[0] > 2 * k + 1 else lines
+    uniform = core.std(axis=0) < max_std
+    dark = uniform & (core.mean(axis=0) < FRAME_MAX_LEVEL)
+
+    def edge(positions: range) -> int:
+        trim = 0
+        for count, i in enumerate(positions, start=1):
+            if not uniform[i]:
+                break
+            if dark[i]:
+                trim = count
+        return trim
+
     length = uniform.size
-    lead = 0
-    while lead < length and uniform[lead]:
-        lead += 1
-    trail = 0
-    while trail < length - lead and uniform[length - 1 - trail]:
-        trail += 1
+    lead = edge(range(length))
+    trail = edge(range(length - 1, lead - 1, -1))
     return lead, trail
 
 

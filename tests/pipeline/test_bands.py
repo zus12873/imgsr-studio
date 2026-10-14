@@ -73,3 +73,13 @@ def test_content_near_the_edge_is_not_ignored():
     ink(img, (985, 140, 995, 160))  # small right-aligned badge in the outer 3% of each row
     bands = inner(find_blank_bands(img, "y"), 300)
     assert bands and all(not (b0 <= 150 < b1) for b0, b1 in bands)
+
+
+def test_light_ring_outside_a_dark_frame_is_trimmed_too():
+    # Screenshot PNGs often have a transparent 1-2 px ring (white after upload flattening)
+    # around a dark border; the ring must not stop frame detection.
+    img = canvas(400, 200)
+    ImageDraw.Draw(img).rectangle((2, 2, 397, 197), outline=0, width=4)
+    ink(img, (20, 30, 150, 170))
+    ink(img, (250, 30, 380, 170))
+    assert inner(find_blank_bands(img, "x"), 400, margin=6) == [(151, 250)]

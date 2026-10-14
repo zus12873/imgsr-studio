@@ -27,3 +27,10 @@ def test_insertion():
 
 def test_to_json():
     assert Diff("a", "b", "c").to_json() == {"expected": "a", "found": "b", "sentence": "c"}
+
+
+def test_pictographs_and_symbols_are_ignored():
+    # Transcriptions include or drop emoji/decorative symbols inconsistently.
+    assert compare("👉基础词库：喜欢、爱", "基础词库：喜欢、爱") == []
+    assert compare("☆借助下列框架", "借助下列框架") == []
+    assert compare("△习作例文1", "习作例文1") == []
